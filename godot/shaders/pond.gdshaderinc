@@ -34,7 +34,7 @@ vec2 pond_p(vec2 uv, float asp) {
 
 // Negative inside the water.
 float pond_sdf(vec2 p, float asp) {
-	vec2 b = vec2(asp * 0.5 - 0.018, 0.5 - 0.07);
+	vec2 b = vec2(asp * 0.5 - 0.018, 0.5 - 0.06);
 	float r = min(0.12, b.x * 0.6);
 	vec2 q = abs(p) - b + r;
 	float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;

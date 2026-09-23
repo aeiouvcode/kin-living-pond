@@ -219,7 +219,7 @@ func _pp(p: Vector2) -> Vector2:
 
 func cpu_sdf(p: Vector2) -> float:
 	var q = _pp(p)
-	var b = Vector2(aspect * 0.5 - 0.018, 0.5 - 0.07)
+	var b = Vector2(aspect * 0.5 - 0.018, 0.5 - 0.06)
 	var r = minf(0.12, b.x * 0.6)
 	var d = Vector2(absf(q.x), absf(q.y)) - b + Vector2(r, r)
 	return Vector2(maxf(d.x, 0.0), maxf(d.y, 0.0)).length() + minf(maxf(d.x, d.y), 0.0) - r + 0.022
@@ -258,7 +258,7 @@ func _build_fish() -> void:
 		f.name = NAMES[i]
 		var v = _variety(i)
 		f.variety = v.v
-		f.length = randf_range(124.0, 166.0) * clampf(vis.x / 390.0, 0.9, 1.5)
+		f.length = randf_range(114.0, 154.0) * clampf(vis.x / 390.0, 0.95, 2.1)
 		if v.v == "chagoi":
 			f.length *= 1.12
 		f.width = f.length * randf_range(0.13, 0.148)
@@ -734,8 +734,12 @@ func _layout_ui() -> void:
 		return
 	var safe = DisplayServer.get_display_safe_area()
 	var top = 14.0
+	var big = vis.x > 700.0
+	name_label.add_theme_font_size_override("font_size", 24 if big else 17)
+	sub_label.add_theme_font_size_override("font_size", 15 if big else 12)
+	toast.add_theme_font_size_override("font_size", 18 if big else 14)
 	name_label.position = Vector2(20, top)
-	sub_label.position = Vector2(20, top + 23)
+	sub_label.position = Vector2(20, top + (31 if big else 23))
 	toast.size = Vector2(vis.x - 40, 24)
 	toast.position = Vector2(20, vis.y - 44)
 	if card != null:
