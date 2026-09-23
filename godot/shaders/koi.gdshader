@@ -71,7 +71,7 @@ void fragment() {
 		a = smoothstep(0.0, 0.16, edge);
 	} else {
 		// Fins: translucent membrane with rays, tinted by the body colour.
-		float rays = 0.72 + 0.28 * sin(uv.y * 70.0 + uv.x * 3.0);
+		float rays = 0.88 + 0.12 * sin(uv.y * 70.0 + uv.x * 3.0);
 		float edge = smoothstep(0.0, 0.25, uv.y) * smoothstep(1.0, 0.75, uv.y);
 		float tipfade = smoothstep(1.02, 0.55, uv.x);
 		vec3 fc = mix(vec3(0.95, 0.93, 0.9), mix(base_col, patch_col, fin_tint), 0.55);

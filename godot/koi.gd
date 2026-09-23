@@ -264,7 +264,7 @@ func build_mesh() -> void:
 	var body = Color(0, 0, 0, 1)
 	# Pectoral and pelvic fins (under the body).
 	for side in [-1.0, 1.0]:
-		_fin(pts, uvs, cols, idx_arr, sp[3], tn[3], side, W * 0.8, 0.95 + 0.35 * sin(fin_phase) * side * 0.0 + 0.3 * sin(fin_phase), W * 1.55, W * 0.5, 0.62)
+		_fin(pts, uvs, cols, idx_arr, sp[3], tn[3], side, W * 0.8, 0.95 + 0.35 * sin(fin_phase) * side * 0.0 + 0.3 * sin(fin_phase), W * 1.9, W * 0.62, 0.5)
 		_fin(pts, uvs, cols, idx_arr, sp[7], tn[7], side, W * 0.5, 1.15 + 0.2 * sin(fin_phase + 1.3), W * 0.8, W * 0.28, 0.45)
 	# Tail.
 	var pe = sp[N - 1]

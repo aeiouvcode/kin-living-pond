@@ -34,7 +34,7 @@ vec2 pond_p(vec2 uv, float asp) {
 
 // Negative inside the water.
 float pond_sdf(vec2 p, float asp) {
-	vec2 b = vec2(asp * 0.5 - 0.03, 0.5 - 0.075);
+	vec2 b = vec2(asp * 0.5 - 0.018, 0.5 - 0.07);
 	float r = min(0.12, b.x * 0.6);
 	vec2 q = abs(p) - b + r;
 	float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
@@ -44,7 +44,7 @@ float pond_sdf(vec2 p, float asp) {
 
 // Shore stones. x = dome height 0..1, y = stone id hash, z = normalised distance.
 vec3 stones(vec2 p) {
-	vec2 g = p * 15.0;
+	vec2 g = p * 19.0;
 	vec2 i = floor(g);
 	vec2 f = fract(g);
 	float best = 9.0;

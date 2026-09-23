@@ -60,6 +60,7 @@ var toast_t = 0.0
 var toast_queue: Array = []
 var card: PanelContainer
 var name_edit: LineEdit
+var card_body: Label
 
 # Save data
 var pond_name = ""
@@ -218,7 +219,7 @@ func _pp(p: Vector2) -> Vector2:
 
 func cpu_sdf(p: Vector2) -> float:
 	var q = _pp(p)
-	var b = Vector2(aspect * 0.5 - 0.03, 0.5 - 0.075)
+	var b = Vector2(aspect * 0.5 - 0.018, 0.5 - 0.07)
 	var r = minf(0.12, b.x * 0.6)
 	var d = Vector2(absf(q.x), absf(q.y)) - b + Vector2(r, r)
 	return Vector2(maxf(d.x, 0.0), maxf(d.y, 0.0)).length() + minf(maxf(d.x, d.y), 0.0) - r + 0.022
@@ -257,10 +258,10 @@ func _build_fish() -> void:
 		f.name = NAMES[i]
 		var v = _variety(i)
 		f.variety = v.v
-		f.length = randf_range(108.0, 146.0) * clampf(vis.x / 390.0, 0.9, 1.5)
+		f.length = randf_range(132.0, 176.0) * clampf(vis.x / 390.0, 0.9, 1.5)
 		if v.v == "chagoi":
 			f.length *= 1.12
-		f.width = f.length * randf_range(0.12, 0.135)
+		f.width = f.length * randf_range(0.13, 0.148)
 		f.pace = randf_range(0.8, 1.2)
 		f.boldness = randf_range(0.2, 0.75)
 		f.social = randf_range(0.2, 0.8)
@@ -486,7 +487,7 @@ func _process(dt: float) -> void:
 		f.mat.set_shader_parameter("glow", f.glow)
 		var off: Vector2 = Vector2(0.55, 0.83) * (5.0 + 24.0 * (1.0 - f.depth))
 		f.shadow_node.position = off
-		f.shadow_node.modulate.a = 0.28 + 0.42 * f.depth
+		f.shadow_node.modulate.a = 0.42 + 0.36 * f.depth
 		f.body_node.queue_redraw()
 		f.shadow_node.queue_redraw()
 	floor_mat.set_shader_parameter("time", time)
@@ -658,8 +659,8 @@ func _build_card() -> void:
 	title.add_theme_color_override("font_color", Color(0.1, 0.17, 0.17))
 	vb.add_child(title)
 	var body = Label.new()
-	body.text = "Nine koi live here. Feed them, and they will learn to trust you."
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.text = "Nine koi live here. Feed them,\nand they will learn to trust you."
+	card_body = body
 	body.add_theme_font_size_override("font_size", 13)
 	body.add_theme_color_override("font_color", Color(0.3, 0.36, 0.35))
 	vb.add_child(body)
@@ -721,6 +722,7 @@ func _layout_ui() -> void:
 	toast.position = Vector2(20, vis.y - 44)
 	if card != null:
 		var w = minf(vis.x - 32.0, 380.0)
+		card.custom_minimum_size = Vector2(w, 0)
 		card.size = Vector2(w, 0)
 		card.reset_size()
 		var h = card.get_combined_minimum_size().y
