@@ -53,8 +53,9 @@ vec3 stones(vec2 p) {
 		for (int x = -1; x <= 1; x++) {
 			vec2 o = vec2(float(x), float(y));
 			vec2 h = h22(i + o);
+			if (h21(i + o + 3.0) < 0.3) { continue; }
 			vec2 r = o + 0.15 + 0.7 * h - f;
-			float rad = 0.42 + 0.3 * h21(i + o + 7.0);
+			float rad = 0.34 + 0.4 * h21(i + o + 7.0);
 			float d = length(r * vec2(1.0, 1.0 + 0.5 * h.x)) / rad;
 			if (d < best) { best = d; bid = i + o; }
 		}

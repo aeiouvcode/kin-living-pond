@@ -100,7 +100,7 @@ func update(dt: float, pond, fishes: Array) -> void:
 				var r = randf()
 				if r < laziness * 0.35:
 					set_state(S.REST, randf_range(4.0, 9.0))
-				elif r < laziness * 0.35 + social * 0.45 and fishes.size() > 1:
+				elif r < laziness * 0.35 + social * 0.25 and fishes.size() > 1:
 					buddy = fishes[randi() % fishes.size()]
 					if buddy != self:
 						set_state(S.SCHOOL, randf_range(5.0, 12.0))
@@ -192,9 +192,9 @@ func update(dt: float, pond, fishes: Array) -> void:
 			continue
 		var d: Vector2 = pos - o.pos
 		var dd = d.length()
-		var r2 = (length + o.length) * 0.42
-		if dd < r2 and absf(depth - o.depth) < 0.35 and dd > 0.01:
-			desire += d / dd * (1.0 - dd / r2) * 1.3
+		var r2 = (length + o.length) * 0.55
+		if dd < r2 and absf(depth - o.depth) < 0.3 and dd > 0.01:
+			desire += d / dd * (1.0 - dd / r2) * 2.6
 	for pad in pond.pads:
 		pass
 	var want_h = desire.angle() if desire.length() > 0.01 else heading
@@ -215,11 +215,19 @@ func update(dt: float, pond, fishes: Array) -> void:
 	# Chain spine: the body follows the head.
 	var seg = length * 0.74 / float(N - 1)
 	spine[0] = pos
+	var prev_dir = Vector2.from_angle(heading)
 	for i in range(1, N):
 		var v = spine[i - 1] - spine[i]
 		var l = v.length()
 		if l > 0.0001:
-			spine[i] = spine[i - 1] - v / l * seg
+			var d = v / l
+			# Limit the bend per joint so the body never folds.
+			var ang = prev_dir.angle_to(d)
+			var lim = 0.22
+			if absf(ang) > lim:
+				d = prev_dir.rotated(clampf(ang, -lim, lim))
+			spine[i] = spine[i - 1] - d * seg
+			prev_dir = d
 
 	# Wakes: fish near the surface push water.
 	if depth < 0.3:
@@ -230,7 +238,7 @@ func update(dt: float, pond, fishes: Array) -> void:
 			pond.add_ripple(spine[3], s, 1.6)
 
 func _w(u: float) -> float:
-	var head = pow(clampf(u / 0.2, 0.0, 1.0), 0.42)
+	var head = pow(clampf(u / 0.2, 0.0, 1.0), 0.38)
 	var taper = 1.0 - 0.8 * smoothstep(0.3, 1.0, u)
 	return width * head * taper
 
@@ -272,12 +280,12 @@ func build_mesh() -> void:
 	var swing = sin(phase - 6.3) * 0.45
 	var M = 7
 	var base = pts.size()
-	var Lt = length * 0.3 * sc
+	var Lt = length * 0.34 * sc
 	for k in M:
 		var r = float(k) / float(M - 1)
 		var dir = (-te).rotated(swing * r)
 		var nn = dir.orthogonal()
-		var hw = lerpf(W * 0.14, W * 1.05, pow(r, 0.75))
+		var hw = lerpf(W * 0.14, W * 1.2, pow(r, 0.7))
 		var cen = pe + dir * (r * Lt)
 		var notch = pe + dir * (r * Lt * (1.0 - 0.38 * pow(r, 2.5)))
 		pts.append(cen + nn * hw)
@@ -307,7 +315,7 @@ func build_mesh() -> void:
 		for _j in 3:
 			cols.append(body)
 	# Round the nose with a small fan.
-	var nose = sp[0] + tn[0] * W * 0.22
+	var nose = sp[0] + tn[0] * W * 0.26
 	pts.append(nose)
 	uvs.append(Vector2(0.0, 0.5))
 	cols.append(body)

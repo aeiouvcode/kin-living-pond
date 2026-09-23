@@ -258,7 +258,7 @@ func _build_fish() -> void:
 		f.name = NAMES[i]
 		var v = _variety(i)
 		f.variety = v.v
-		f.length = randf_range(132.0, 176.0) * clampf(vis.x / 390.0, 0.9, 1.5)
+		f.length = randf_range(124.0, 166.0) * clampf(vis.x / 390.0, 0.9, 1.5)
 		if v.v == "chagoi":
 			f.length *= 1.12
 		f.width = f.length * randf_range(0.13, 0.148)
@@ -534,13 +534,7 @@ func draw_surface(ci: CanvasItem) -> void:
 		var c: Vector2 = p.pos + bob
 		var notch: float = p.notch + sin(time * 0.1 + p.ph) * 0.08
 		var r: float = p.r
-		ci.draw_colored_polygon(_pad_poly(c, r, notch), Color(0.13, 0.27, 0.12))
-		ci.draw_colored_polygon(_pad_poly(c + Vector2(-0.6, -0.9), r * 0.93, notch), Color(0.2, 0.38, 0.16))
-		ci.draw_colored_polygon(_pad_poly(c + Vector2(-2.0, -2.5), r * 0.55, notch), Color(0.25, 0.44, 0.19, 0.5))
-		for k in 9:
-			var a = notch + 0.35 + (TAU - 0.7) * float(k) / 8.0
-			ci.draw_line(c, c + Vector2.from_angle(a) * r * 0.88, Color(0.1, 0.22, 0.09, 0.5), 1.0, true)
-		ci.draw_arc(c, r * 0.97, notch + 0.2, notch + TAU - 0.2, 40, Color(0.35, 0.52, 0.25, 0.55), 1.2, true)
+		_draw_pad(ci, c, r, notch)
 		if i < lotus:
 			_draw_lotus(ci, c + Vector2.from_angle(notch + PI) * r * 0.25, r * 0.55)
 	for pl in pellets:
@@ -573,6 +567,30 @@ func draw_surface(ci: CanvasItem) -> void:
 		for k in 5:
 			var hc = box.position + Vector2(w * 0.5 - 24.0 + 12.0 * k, 29.0)
 			_heart(ci, hc, 4.2, Color(0.8, 0.27, 0.2, a2) if k < lvl else Color(0.5, 0.5, 0.48, 0.45 * a2))
+
+func _draw_pad(ci: CanvasItem, c: Vector2, r: float, notch: float) -> void:
+	var poly = _pad_poly(c, r, notch)
+	var cols = PackedColorArray()
+	var ld = Vector2(-0.55, -0.83)
+	for k in poly.size():
+		if k == 0:
+			cols.append(Color(0.36, 0.5, 0.2))
+		else:
+			var dirv = (poly[k] - c).normalized()
+			var lit = dirv.dot(ld)
+			cols.append(Color(0.12, 0.25, 0.1).lerp(Color(0.24, 0.4, 0.16), 0.5 + 0.5 * lit))
+	ci.draw_polygon(poly, cols)
+	for k in 11:
+		var a = notch + 0.3 + (TAU - 0.6) * float(k) / 10.0
+		var e = c + Vector2.from_angle(a) * r * 0.9
+		ci.draw_line(c, e, Color(0.42, 0.56, 0.26, 0.35), 1.0, true)
+	# Upturned rim: lit on the light side, shaded on the far side.
+	ci.draw_arc(c, r * 0.97, notch + 0.2, notch + TAU - 0.2, 48, Color(0.1, 0.2, 0.08, 0.6), 1.6, true)
+	var la = ld.angle()
+	ci.draw_arc(c, r * 0.95, la - 1.1, la + 1.1, 24, Color(0.62, 0.74, 0.42, 0.55), 1.3, true)
+	# Waxy sheen.
+	ci.draw_circle(c + ld * r * 0.35, r * 0.28, Color(0.8, 0.9, 0.7, 0.07))
+	ci.draw_circle(c + ld * r * 0.4, r * 0.14, Color(0.9, 0.95, 0.8, 0.08))
 
 func _heart(ci: CanvasItem, c: Vector2, s: float, col: Color) -> void:
 	ci.draw_circle(c + Vector2(-s * 0.5, -s * 0.2), s * 0.55, col)

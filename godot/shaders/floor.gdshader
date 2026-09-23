@@ -51,7 +51,7 @@ void fragment() {
 	pcol = mix(pcol, scol, sub);
 	// Water absorption: shallow reads warm, the deep centre falls to green-black.
 	vec3 col = mix(pcol * vec3(0.75, 0.85, 0.8), mid_col, 0.45 + 0.25 * depth);
-	col = mix(col, deep_col, depth * 0.62);
+	col = mix(col, deep_col, depth * 0.55);
 	// Slow drifting light from the canopy.
 	float dapple = fbm3(p * 3.0 + vec2(time * 0.012, -time * 0.008));
 	col *= 0.82 + 0.3 * smoothstep(0.35, 0.75, dapple);

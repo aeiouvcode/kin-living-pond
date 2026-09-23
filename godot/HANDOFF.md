@@ -4,14 +4,25 @@
 1. Distance-to-reference audit against Koi - Aquarium (HAREPPO) Play listing and RYUKIN listing imagery. Original owner reference imagery is still missing, so the audit is PARTIAL.
 2. Fix audit items in priority order (see below), then web export + phone QA + CSP test.
 
-## Distance-to-reference audit (cycle 1, PARTIAL: original owner reference imagery missing)
-Compared at 390x844 against Koi - Aquarium (HAREPPO) listing screenshot 1 and RYUKIN listing imagery. Still reads worse, in priority order:
-1. Koi bodies: reference fish have photographic skin, soft subsurface glow and wide soft fins; ours are procedural and slightly stiff at the head.
-2. Water surface: reference water has a bright textured surface with light gradient; ours is darker by design but the bed still reads murky in the middle.
-3. Bank frame: stone ring is busy and heavy compared with the reference's full-bleed water.
-4. Lily pads read as flat clip art (uniform green, hard edges, no curl or sheen).
-5. Touch water response not yet verified in frames (sim runs; no captured tap sequence).
-6. Desktop frame not yet captured: Movie Maker ignored --resolution 1440x900 (handheld portrait orientation); capture from the web export instead.
+## Distance-to-reference audit (cycle 2, PARTIAL: original owner reference imagery missing)
+Still reads worse than Koi - Aquarium listing imagery, in priority order:
+1. Koi skin is still procedural: no photographic texture or scale sparkle; heads slightly blunt.
+2. Nine large koi in a narrow phone pond still feel busy at times.
+3. Stone ring remains heavier than the reference's full-bleed water, especially at the top.
+4. Desktop: pond is large and fish read small; HUD text is tiny at 1440 wide.
+
+## Security grades (cycle 2)
+- Secrets in repo/history: PASS
+- Unexpected network / telemetry: PASS (same-origin + blob only, CSP connect-src 'self', 0 violations)
+- Third-party scripts/CDNs: PASS (none; official Godot template self-hosted)
+- Injection sinks: PASS (plain Label, control/bidi chars stripped, 24 char cap; markup test literal)
+- Local storage tampering: PASS (16 KB cap, type checks, clamps)
+- CSP completeness: PARTIAL (style-src 'unsafe-inline' for the Godot shell; frame-ancestors impossible via meta on Pages)
+- Error handling: PARTIAL (default Godot shell can show raw engine errors on boot failure; needs a custom shell)
+
+## Performance
+- Wasm 38.0 MB raw, 9.26 MB gzip -9. KIN VII is ~25 KB. Whether GitHub Pages serves .wasm gzipped is unverified.
+- Swiftshader frame rate is not meaningful; real-phone frame cost still unmeasured.
 
 ## Failed approaches
 - Side-view Godot aquarium with many fish: crowded and flat, never beat KIN VII.

@@ -86,9 +86,17 @@ void fragment() {
 		vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
 		float spec = pow(max(dot(n, H), 0.0), 90.0);
 		float fres = 0.03 + 0.25 * pow(1.0 - n.z, 2.0);
-		vec3 sky = mix(vec3(0.5, 0.62, 0.62), vec3(0.85, 0.8, 0.7), uv.y) * (0.55 + 0.45 * canopy);
-		w = mix(w, sky, fres * 0.5);
-		w += vec3(1.0, 0.96, 0.88) * spec * 0.55 * (0.4 + 0.6 * canopy);
+		// Reflected sky: brighter toward the upper left, broken by soft cloud and leaf shapes.
+		vec2 rp = p + grad * 0.6;
+		float cloud = fbm3(rp * vec2(2.2, 3.0) + vec2(time * 0.006, 0.0));
+		float skyg = clamp(0.75 - (uv.x * 0.6 + uv.y * 0.8) * 0.6, 0.0, 1.0);
+		vec3 sky = mix(vec3(0.42, 0.55, 0.58), vec3(0.8, 0.86, 0.84), skyg) * (0.6 + 0.5 * cloud) * (0.55 + 0.45 * canopy);
+		w = mix(w, sky, clamp(fres * 0.5 + 0.1 * skyg * cloud, 0.0, 0.4));
+		// Micro ripples from breeze: fine sparkle that never quite stops.
+		vec2 mg = vec2(vnoise(p * 180.0 + time * 0.8) - vnoise(p * 180.0 + 3.1 - time * 0.7), vnoise(p * 160.0 + 7.7 + time * 0.6) - vnoise(p * 170.0 - time * 0.9));
+		vec3 nm = normalize(vec3(-grad * 14.0 - mg * 0.35, 1.0));
+		float sparkle = pow(max(dot(nm, H), 0.0), 220.0) * skyg;
+		w += vec3(1.0, 0.96, 0.88) * (spec * 0.55 + sparkle * 0.6) * (0.4 + 0.6 * canopy);
 		// Soft contact shadow cast by stones onto the water.
 		vec2 so = p - L.xy * 0.018;
 		float sh = solid_mask(pond_sdf(so, aspect), stones(so), 0.006);
