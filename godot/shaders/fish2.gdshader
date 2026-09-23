@@ -51,12 +51,7 @@ void fragment() {
 			vec2 sc = vec2(uv.x * 26.0, x * 5.0);
 			sc.y += step(1.0, mod(floor(sc.x), 2.0)) * 0.5;
 			col *= 0.97 + 0.05 * smoothstep(0.5, 0.2, length(fract(sc) - 0.5));
-			vec2 e1 = vec2((uv.x - 0.1) * 11.0, (x - 0.62) * 4.2);
-			vec2 e2 = vec2((uv.x - 0.1) * 11.0, (x + 0.62) * 4.2);
-			vec4 ea = eye(e1 / 1.0, 0.0);
-			vec4 eb = eye(e2 / 1.0, 0.0);
-			col = mix(col, ea.rgb, ea.a);
-			col = mix(col, eb.rgb, eb.a);
+			// Eyes are separate quads now.
 		} else {
 			col = vec3(0.035, 0.035, 0.05);
 			float velvet = vn(vec2(uv.x * 40.0, x * 8.0) + seed) * 0.03;
@@ -71,7 +66,7 @@ void fragment() {
 		// Ragged, soft trailing edge so the veil never reads as a polygon.
 		float rag = 0.72 + 0.22 * vn(vec2(uv.y * 9.0, seed));
 		float tip = smoothstep(1.0, rag, uv.x) * (1.0 - uv.x * 0.35);
-		float root = 1.0 + 0.6 * smoothstep(0.3, 0.0, uv.x);
+		float root = 1.0 + 0.25 * smoothstep(0.3, 0.0, uv.x);
 		if (kind < 0.5) {
 			col = mix(vec3(1.0, 0.86, 0.82), vec3(0.99, 0.98, 1.0), smoothstep(0.0, 0.45, uv.x));
 			col *= streak;

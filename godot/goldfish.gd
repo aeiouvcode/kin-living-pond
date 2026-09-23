@@ -219,7 +219,10 @@ func _update_fins(dt: float) -> void:
 		var ta: float = TAIL_ANG[s]
 		pts[0] = base + side * ta * width * 0.5
 		var dir0 = back.rotated(ta * spread + beat)
-		for i in range(1, TM):
+		# Pin the first segment to the fan direction so the veil root stays open.
+		pts[1] = pts[0] + dir0 * tseg
+		prv[1] = pts[1]
+		for i in range(2, TM):
 			var f = float(i) / float(TM - 1)
 			var cur = pts[i]
 			var vel = (cur - prv[i]) * 0.86
@@ -232,7 +235,13 @@ func _update_fins(dt: float) -> void:
 			var d = pts[i] - pts[i - 1]
 			var l = d.length()
 			if l > 0.0001:
-				pts[i] = pts[i - 1] + d / l * tseg
+				var nd = d / l
+				if i >= 2:
+					# Cap bending per joint so the veil curls instead of folding.
+					var pd = (pts[i - 1] - pts[i - 2]).normalized()
+					var ang = pd.angle_to(nd)
+					nd = pd.rotated(clampf(ang, -0.32, 0.32))
+				pts[i] = pts[i - 1] + nd * tseg
 		strands[s] = pts
 		strands_prev[s] = prv
 	# Keep the veil a single sheet: relax each strand toward the midpoint of its
@@ -366,10 +375,10 @@ func build_mesh() -> void:
 		var a4 = base + i * 2
 		ia.append_array([a4, a4 + 2, a4 + 1, a4 + 1, a4 + 2, a4 + 3])
 	# Demekin: telescope eyes bulge out past the head.
-	if kind == 1:
-		for sd in [-1.0, 1.0]:
-			var ec = sp[2] + tn[2].orthogonal() * sd * width * 0.46 * sc - tn[2] * width * 0.05
-			var er = width * 0.2 * sc
+	for sd in [-1.0, 1.0]:
+		if true:
+			var ec = sp[2] + tn[2].orthogonal() * sd * width * (0.46 if kind == 1 else 0.3) * sc - tn[2] * width * (0.05 if kind == 1 else -0.02)
+			var er = width * (0.2 if kind == 1 else 0.11) * sc
 			var eb = pts.size()
 			var t1 = tn[2]
 			var o1 = t1.orthogonal()

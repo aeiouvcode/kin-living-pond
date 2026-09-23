@@ -108,7 +108,7 @@ func _measure() -> void:
 	center = vis * 0.5
 	radius = minf(vis.x, vis.y) * 0.5 * 1.0
 	if vis.y > vis.x * 1.3:
-		radius = vis.x * 0.5 * 1.12
+		radius = vis.x * 0.5 * 1.3
 	grid = Vector2i(maxi(16, int(vis.x / 4.4)), maxi(16, int(vis.y / 4.4)))
 
 func _fish_scale() -> float:
@@ -293,9 +293,10 @@ func _petal_target() -> int:
 
 func _new_petal(anywhere: bool) -> Dictionary:
 	var d = randf()
+	var near = randf() < 0.14
 	var p = random_point(1.15) if anywhere else center + Vector2.from_angle(randf() * TAU) * radius * 1.1
-	return {"pos": p, "depth": d * d, "rot": randf() * TAU, "spin": randf_range(-0.25, 0.25),
-		"size": randf_range(9.0, 15.0) * _fish_scale() * 0.62 * (1.35 if randf() < 0.3 else 1.0),
+	return {"pos": p, "depth": -0.4 if near else d * d, "rot": randf() * TAU, "spin": randf_range(-0.25, 0.25),
+		"size": randf_range(9.0, 15.0) * _fish_scale() * 0.62 * (1.35 if randf() < 0.3 else 1.0) * (2.4 if near else 1.0),
 		"flower": 1.0 if randf() < 0.3 else 0.0, "vel": Vector2(randf_range(-3, 3), randf_range(-3, 3))}
 
 func _seed_petals() -> void:
@@ -339,7 +340,7 @@ func draw_petals(ci: CanvasItem, deep: bool) -> void:
 			continue
 		var blur = clampf(absf(d - 0.12) * 1.3, 0.0, 1.0)
 		var sz: float = pt.size * (1.0 - 0.3 * d) * (1.0 + blur * 0.35)
-		var alpha = 0.95 - 0.45 * d
+		var alpha = (0.95 - 0.45 * d) if d >= 0.0 else 0.7
 		var r = Vector2.from_angle(pt.rot) * sz
 		var o = r.orthogonal()
 		var c: Vector2 = pt.pos
