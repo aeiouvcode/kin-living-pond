@@ -1,11 +1,12 @@
 # Checkpoint
 
-- 2026-09-22 First Godot pass (side view, 38 fish) rejected: crowded, flat.
-- 2026-09-22 Second pass (18 fish, side view) better but still below KIN VII; source lost in a workspace rebuild.
-- 2026-09-23 Rebuilt from scratch as a top-down pond (this branch): shore SDF + stones, pebble floor, GPU heightfield sim, composite with refraction/caustics/foam/specular, 9 procedural koi with chain spines, fins, shadows, lily pads, lotus progression, onboarding card, local save.
-- 2026-09-23 First Movie Maker frames at 390x844 render correctly (fish, pads, shore, card).
-- 2026-09-23 Audit cycle 1 fixes: onboarding card sized to content, fish scaled up ~1.2x with fuller bodies and bigger pectorals, softer pebble bed, thinner bank, smaller stones, stronger shadows, subtler fin rays and scales.
-- 2026-09-23 Audit cycle 2: organic patch edges, warm subsurface edge glow, blunter head, longer tail, softer fins; reflected sky and breeze sparkle on the water; sparser shore stones; shaded lily pads with lit rim and sheen; joint bend limit (no folded bodies); stronger separation, less clumping.
-- 2026-09-23 Web export built (build.sh adds a hashed-script CSP). Local headless Chrome: boot 2.7-3.4 s after files are local, zero CSP violations, requests only same-origin + blob, name markup renders as plain text, name + streak persist across reload.
-- 2026-09-23 Security scan: 14 commits across all branches, no secret patterns; branch source has no external URLs; engine JS only mentions two doc URLs in error strings.
-- 2026-09-23 Desktop pass: koi scale up to 2.1x on wide screens, larger HUD text above 700 px, thinner top bank. Desktop frame checked from the real web export.
+- 2026-09-23 20:06 IST, cycle 3 in progress on branch godot-prototype.
+- Done: bowl.gd scene, goldfish.gd (spring-chain veil, 9 strands x 14 points, lateral smoothing so strands never cross), fish2 shader (ragged soft veil edge, strong root), petals, bloom composite, fish separation with positional nudge, fish scale tied to bowl radius.
+- Rendered: phone 390x844 at 3/6/10 s and desktop 1280x800 at 5 s with Godot --write-movie (override.cfg sets desktop viewport; --resolution is ignored in movie mode).
+- Open (worse than reference, in order):
+  1. Demekin veil still pinches into a bow-tie near the root on turns; hard dark triangle at times.
+  2. Ryukin eyes read as dark crescents, not glossy round eyes.
+  3. Bodies are flat 2D ribbons; reference has volumetric, glossy bodies with soft shading.
+  4. Composition: reference is a close macro with big fish and big blurred petals; ours shows the whole small bowl on phone.
+  5. Petals are small and mostly in focus; need depth blur and larger near-camera petals.
+- Web export not yet rebuilt for cycle 3; live /godot/ is still the cycle 2 koi pond (cb9b55f).

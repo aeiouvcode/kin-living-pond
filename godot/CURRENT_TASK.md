@@ -1,18 +1,20 @@
 # Current task
 
-Rebuild KIN in Godot 4.5 (Compatibility / WebGL2) as a top-down koi pond, and only replace the live direct-WebGL build (KIN VII on `main`) if the Godot web export clears phone QA, performance, security and the distance-to-reference audit.
+Cycle 3: rebuild KIN in Godot 4.5 (Compatibility / WebGL2) as a RYUKIN-style glass bowl, graded against Hakozaki's RYUKIN launch post (https://x.com/m_hakozaki/status/1767747010718040068). The koi pond build (main.gd / koi.gd) stays in the folder but is no longer the target. The live /godot/ preview and main's index.html (KIN VII) are only replaced with a new owner go.
+
+## Target look (from the reference)
+- Pastel periwinkle glass bowl seen from above, faint rim, rainbow glint top-right, strong bloom.
+- Two fancy goldfish: white-peach ryukin (pink blush, glossy eyes, long translucent veil) and velvet black demekin (blue sheen, bulging eyes with thin orange rim).
+- Sakura petals at several depths with blur; sparkles and dust motes.
+- Fins lag on turns; fish turn toward/away from touch; slow, graceful swimming.
 
 ## Acceptance criteria
-- A1 Instant-alive opening: fish swimming on first frame, naming card does not blur the pond.
-- A2 Darker, readable water with pebble bed, depth absorption and shore stones.
-- A3 Cheap shallow-water heightfield (GPU ping-pong) driven by touch and by fish near the surface; refraction, caustics, restrained foam.
-- A4 Individual koi: variety, size, pace, boldness, sociability, preferred depth; states wander/school/rest/gulp/food/touch/startle.
-- A5 Calm affection loop: feeding and nuzzles raise per-fish bond; pond harmony opens lotus blooms; daily return streak. Saved locally only.
-- A6 390x844 phone frame and 1440x900 desktop frame checked side by side against references.
-- A7 Security: no network calls beyond same-origin engine files, no secrets, sanitised name input, strict CSP verified in a browser.
-- A8 Web export startup and frame cost measured on the real export, reported honestly.
+- B1 Phone 390x844 and desktop 1280x800 frames checked side by side with the reference each cycle; worse-list fixed in order.
+- B2 Veil fins read as one soft sheet: no shards, no detached tails, no hard polygon edges.
+- B3 Fish never swim through each other; stay inside the bowl.
+- B4 Calm bond loop kept (feed, nuzzle, blossoms, daily return), saved locally only.
+- B5 Security: same-origin engine files only, no secrets, sanitised name input, strict CSP verified in a browser.
+- B6 Web export startup and frame cost measured on the real export.
 
 ## Non-goals
-- Full 3D fluid simulation.
-- Accounts, backend, analytics, ads.
-- Replacing `main` before A1-A8 pass.
+- Full 3D fluid simulation. Accounts, backend, analytics, ads.
