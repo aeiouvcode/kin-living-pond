@@ -1,12 +1,19 @@
 # Checkpoint
 
-- 2026-09-23 20:35 IST, cycle 3 candidate on branch godot-prototype (local commit, not pushed yet).
-- Done this cycle: RYUKIN-style bowl (bowl.gd), goldfish.gd spring-chain veil (9 strands x 14 points, pinned open root, per-joint bend cap, lateral smoothing), eyes as separate glossy quads for both fish, fish separation, fish scale tied to bowl radius, bigger bowl on phone (macro feel), near-camera blurred petals, bloom composite.
-- Web export QA (local Chrome, real export): phone 390x844 boot 3.9 s, desktop 1280x800 boot 4.7 s, 7 same-origin requests, 0 external, 0 CSP violations or console errors.
+- 2026-09-23 21:14 IST, cycle 4 (fish craft) candidate on branch godot-prototype, local commit only. Branch push is NOT approved yet; keep local.
+- Trigger: Naksh saw the cycle 3 side by side and called the fish "lovecraftian horror", mostly the demekin.
+- Done this cycle:
+  - Bodies: soft rounded shading from a fake normal, one broad back specular, gentle rim. Scale pattern removed.
+  - Veils: silky, mostly white on the ryukin, velvet black on the demekin; soft wide side falloff at the root, ragged soft trailing edge; rooted inside the body so no pinch shows.
+  - Demekin rebuilt: long slim velvety body (len 124, w 44), blunt head, long taper into a 150 tail; smaller telescope eyes set on the head.
+  - Ryukin: slimmer, longer 190 veil, small eyes set into the head.
+  - Spine bend capped at 0.065 rad per joint (was 0.16 over 16 joints, which made banana/comma bodies).
+  - Fish clipped to the glass with a soft fade just inside the rim.
+- QA on the real web export (local Chrome): phone boot 4.2 s, desktop 4.4 s, 7 same-origin requests, 0 external, 0 CSP violations or console errors.
 - Still worse than reference, in order:
-  1. Bodies are flat, patterned ribbons; reference bodies are soft, volumetric, glossy with no scale pattern.
-  2. Veils read as striped paper fans at the root; reference veils are long, silky, flowing, mostly white.
-  3. Demekin reads as a round blob; reference is a long velvety body with big tail.
-  4. Desktop leaves the bowl small in the frame; reference is a close macro.
-  5. Naming card covers the bottom third on phone.
-- Live /godot/ is still cycle 2 koi pond (cb9b55f). Replacing it needs a new owner go.
+  1. Ryukin body blooms too white and reads as a flat teardrop; reference has a round, peach-blushed body with visible head shape.
+  2. Veils are still thin and faint next to his big layered, fluttering veils.
+  3. The demekin's outline is smooth; his has a velvety, lumpy body with big dorsal and pectoral fins.
+  4. The naming card covers the bottom of the bowl on phone, and fish often swim under it.
+  5. Desktop bowl sits small in the frame; reference is a close macro.
+- Live /godot/ is still the cycle 2 koi pond (cb9b55f). Replacing it needs a new owner go.

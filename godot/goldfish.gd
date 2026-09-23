@@ -197,8 +197,8 @@ func update(dt: float, pond, fishes: Array) -> void:
 		if l > 0.0001:
 			var d = v / l
 			var ang2 = prev_dir.angle_to(d)
-			if absf(ang2) > 0.16:
-				d = prev_dir.rotated(clampf(ang2, -0.16, 0.16))
+			if absf(ang2) > 0.065:
+				d = prev_dir.rotated(clampf(ang2, -0.065, 0.065))
 			spine[i] = spine[i - 1] - d * seg
 			prev_dir = d
 	_update_fins(dt)
@@ -206,7 +206,8 @@ func update(dt: float, pond, fishes: Array) -> void:
 		pond.add_ripple(spine[3], -0.015, 1.8)
 
 func _update_fins(dt: float) -> void:
-	var base = spine[N - 1]
+	# Root the veil a little inside the body so the body hides the pinch.
+	var base = spine[N - 1].lerp(spine[N - 3], 0.7)
 	var back = (spine[N - 1] - spine[N - 2]).normalized()
 	var side = back.orthogonal()
 	var tseg = tail_len / float(TM - 1)
@@ -275,8 +276,12 @@ func _update_fins(dt: float) -> void:
 		pects_prev[sd] = prv2
 
 func _w(u: float) -> float:
-	# Egg-shaped ryukin body seen from above: narrow snout, deep round middle.
+	# Seen from above. Ryukin: egg body, narrow snout, deep round middle.
+	# Demekin: blunt wide head (the eyes sit on it), long velvety taper.
 	var s = sin(PI * clampf(u * 0.92 + 0.04, 0.0, 1.0))
+	if kind == 1:
+		var head1 = pow(clampf(u / 0.1, 0.0, 1.0), 0.4)
+		return width * 0.5 * pow(s, 0.45) * (0.7 + 0.3 * head1) * (1.0 - 0.7 * smoothstep(0.45, 1.0, u))
 	var head = pow(clampf(u / 0.18, 0.0, 1.0), 0.5)
 	return width * 0.5 * pow(s, 0.75) * (0.55 + 0.45 * head) * (1.0 - 0.45 * smoothstep(0.55, 1.0, u))
 
@@ -377,8 +382,9 @@ func build_mesh() -> void:
 	# Demekin: telescope eyes bulge out past the head.
 	for sd in [-1.0, 1.0]:
 		if true:
-			var ec = sp[2] + tn[2].orthogonal() * sd * width * (0.46 if kind == 1 else 0.3) * sc - tn[2] * width * (0.05 if kind == 1 else -0.02)
-			var er = width * (0.2 if kind == 1 else 0.11) * sc
+			var ei = 2 if kind == 1 else 3
+			var ec = sp[ei] + tn[ei].orthogonal() * sd * width * (0.36 if kind == 1 else 0.27) * sc - tn[2] * width * (0.02 if kind == 1 else -0.02)
+			var er = width * (0.15 if kind == 1 else 0.1) * sc
 			var eb = pts.size()
 			var t1 = tn[2]
 			var o1 = t1.orthogonal()

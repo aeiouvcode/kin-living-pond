@@ -238,13 +238,13 @@ func swim_radius() -> float:
 func cpu_sdf(p: Vector2) -> float:
 	var d = p - center
 	var ry = minf(radius * 0.9, vis.y * 0.42)
-	var rx = minf(radius * 0.9, vis.x * 0.4)
+	var rx = minf(radius * 0.9, vis.x * 0.34)
 	var q = Vector2(d.x / rx, d.y / ry)
 	return (q.length() - 1.0) * minf(rx, ry)
 
 func random_point(frac: float) -> Vector2:
 	var ry = minf(radius * 0.9, vis.y * 0.42)
-	var rx = minf(radius * 0.9, vis.x * 0.4)
+	var rx = minf(radius * 0.9, vis.x * 0.34)
 	var a = randf() * TAU
 	var r = sqrt(randf()) * frac
 	return center + Vector2(cos(a) * rx, sin(a) * ry) * r
@@ -253,8 +253,8 @@ func random_point(frac: float) -> Vector2:
 
 func _build_fish() -> void:
 	var defs = [
-		{"name": "Momo", "kind": 0, "len": 118.0, "w": 60.0, "tail": 150.0, "bold": 0.45},
-		{"name": "Kuro", "kind": 1, "len": 104.0, "w": 58.0, "tail": 110.0, "bold": 0.75},
+		{"name": "Momo", "kind": 0, "len": 112.0, "w": 54.0, "tail": 190.0, "bold": 0.45},
+		{"name": "Kuro", "kind": 1, "len": 124.0, "w": 44.0, "tail": 150.0, "bold": 0.75},
 	]
 	var s = _fish_scale()
 	for i in defs.size():
@@ -526,6 +526,7 @@ func _process(dt: float) -> void:
 		f.body_node.z_index = i
 		f.mat.set_shader_parameter("depth", f.depth)
 		f.mat.set_shader_parameter("glow", f.glow)
+		f.mat.set_shader_parameter("bowl", Vector4(center.x / vis.x, center.y / vis.y, radius / vis.x, vis.x / vis.y))
 		f.body_node.queue_redraw()
 	bg_mat.set_shader_parameter("time", time)
 	bg_mat.set_shader_parameter("warmth", clampf(harmony() / 150.0, 0.0, 1.0))
