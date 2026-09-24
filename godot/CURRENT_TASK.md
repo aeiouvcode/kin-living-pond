@@ -1,5 +1,7 @@
 # Current task
 
+Naksh's call (Sep 24, 7:27 AM): build BOTH the koi pond and the glass bowl. root.gd hosts either one, with a chip (top right) to switch; the choice is saved locally.
+
 Cycle 3: rebuild KIN in Godot 4.5 (Compatibility / WebGL2) as a RYUKIN-style glass bowl, graded against Hakozaki's RYUKIN launch post (https://x.com/m_hakozaki/status/1767747010718040068). The koi pond build (main.gd / koi.gd) stays in the folder but is no longer the target. The live /godot/ preview and main's index.html (KIN VII) are only replaced with a new owner go.
 
 ## Target look (from the reference)
