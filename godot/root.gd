@@ -18,6 +18,11 @@ func _ready() -> void:
 			lab.set_script(load("res://labs/fish_lab.gd"))
 			add_child(lab)
 			return
+		if a == "--lab=water":
+			var wl = Node2D.new()
+			wl.set_script(load("res://labs/water_lab/water_lab.gd"))
+			add_child(wl)
+			return
 	var cfg = ConfigFile.new()
 	if cfg.load(PREF_PATH) == OK:
 		var s = str(cfg.get_value("kin", "scene", "pond"))

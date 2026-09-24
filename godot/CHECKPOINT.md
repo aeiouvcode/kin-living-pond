@@ -1,5 +1,17 @@
 # Checkpoint
 
+- 2026-09-24 17:55 IST, cycle 16: fluid lab v1 (water on its own, no fish).
+  - Heightfield ripple sim on the CPU (~20k square cells, long axis follows the viewport, two steps per frame, damped), random drops plus tap/drag drops, uploaded each frame as a float texture.
+  - Shader: analytic ambient swell (9 travelling waves) plus the sim; floor refraction split per colour channel (dispersion); caustics as the inverse area change of the refracted ray bundle, det(I + k*Hessian), per channel (Clearwater idea, our own code); Beer-Lambert style absorption so the water reads aqua; sun glints with shininess eased by local normal variation (a cheap LEAN-like anti-shimmer); soft sky sheen; highlight shoulder so caustics do not clip.
+  - Floor options: scattered rounded pebbles on sand (default), pool tile, sand ripples. World scale per pixel is the same on phone and desktop.
+  - Tried and dropped: a voronoi mosaic floor (read as stained glass) and a Laplacian-only caustic (blotchy glare, no web).
+- Still worse than Clearwater / real water, in order:
+  1. Ambient caustic web is broken into short shards; real caustics form a continuous net of thin bright lines. Needs a caustic pass computed at the floor (ray-march or a caustic texture in a SubViewport) instead of the per-pixel surface Hessian.
+  2. Colour is cold grey-teal; KIN wants warmer, brighter water with a pastel floor.
+  3. Pebbles have a pale outline ring and no contact shadows; they look pasted on.
+  4. No bloom and no surface reflection of a sky or rim; the surface itself is nearly invisible where there are no caustics.
+  5. Tile floor is untested at phone size; no settings panel yet (launch args only); frame cost on web not measured.
+
 - 2026-09-24 16:50 IST, cycle 15: fish lab v2.
   - Butterfly double tail: two broad forked fans that stand near-vertical at the root and splay outward (58 deg), cupped across their width, with a centre fork and rounded lobe tips. From above it now reads as two lobes, not one fan.
   - Demekin telescope eyes are smooth domes of body tissue with the eye on the outer face (the cylinder "headphones" are gone).
