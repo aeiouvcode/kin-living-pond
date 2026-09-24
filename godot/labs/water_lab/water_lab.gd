@@ -11,14 +11,21 @@ var W = 96
 var H = 208
 const DAMP = 0.985
 
-var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0, "crisp": 1.0, "density": 0.55, "slope": 1.0}
+var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0, "crisp": 1.0, "density": 0.55, "slope": 1.0, "gpu": 1.0}
 var cur := PackedFloat32Array()
 var prev := PackedFloat32Array()
 var img: Image
-var tex: ImageTexture
+var tex: Texture2D
+var sim_vps = []
+var sim_mats = []
+var sim_i := 0
+var pending = []
+var use_gpu := true
+var proc_us := 0
 var rect: ColorRect
 var mat: ShaderMaterial
 var caus_mats = []
+var surf_mat: ShaderMaterial
 var caus_vp: SubViewport
 var t := 0.0
 var drop_acc := 0.0
@@ -39,10 +46,18 @@ func _ready() -> void:
 	H = int(round(cells / W))
 	cur.resize(W * H)
 	prev.resize(W * H)
-	img = Image.create_empty(W, H, false, Image.FORMAT_RF)
-	tex = ImageTexture.create_from_image(img)
+	use_gpu = settings.gpu > 0.0
+	if use_gpu:
+		_build_sim()
+		tex = sim_vps[0].get_texture()
+	else:
+		img = Image.create_empty(W, H, false, Image.FORMAT_RF)
+		tex = ImageTexture.create_from_image(img)
 	_build_caustics(vsz)
 	var layer = CanvasLayer.new()
+	var embedded = has_meta("embedded")
+	if embedded:
+		layer.layer = -1 # drawn as the 3D background (Environment BG_CANVAS)
 	add_child(layer)
 	rect = ColorRect.new()
 	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -65,6 +80,28 @@ func _ready() -> void:
 	mat.set_shader_parameter("caus_tex", caus_vp.get_texture())
 	rect.material = mat
 	layer.add_child(rect)
+	if embedded:
+		# the surface (glints, reflection) is drawn over the fish instead
+		mat.set_shader_parameter("glint", 0.0)
+		mat.set_shader_parameter("refl", 0.0)
+		var top = CanvasLayer.new()
+		top.layer = 1
+		add_child(top)
+		var sr = ColorRect.new()
+		sr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		sr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		surf_mat = ShaderMaterial.new()
+		surf_mat.shader = load("res://labs/water_lab/surface.gdshader")
+		surf_mat.set_shader_parameter("height_tex", tex)
+		surf_mat.set_shader_parameter("grid", Vector2(W, H))
+		surf_mat.set_shader_parameter("wind", settings.wind)
+		surf_mat.set_shader_parameter("glint", settings.glint)
+		surf_mat.set_shader_parameter("refl", settings.refl)
+		sr.material = surf_mat
+		top.add_child(sr)
+		for i in 3:
+			_drop(Vector2(rng.randf_range(0.2, 0.8), rng.randf_range(0.2, 0.8)), 0.25, 2.2)
+		return
 	var tag = Label.new()
 	tag.text = "water lab"
 	tag.position = Vector2(18, 16)
@@ -74,6 +111,52 @@ func _ready() -> void:
 	# a few opening drops so the first frame already has rings
 	for i in 3:
 		_drop(Vector2(rng.randf_range(0.2, 0.8), rng.randf_range(0.2, 0.8)), 0.35, 2.4)
+
+func _build_sim() -> void:
+	# two float targets, ping-pong: each frame one reads the other
+	for k in 2:
+		var vp = SubViewport.new()
+		vp.size = Vector2i(W, H)
+		vp.use_hdr_2d = true # RGBA16F: signed heights
+		vp.transparent_bg = false
+		vp.disable_3d = true
+		vp.render_target_clear_mode = SubViewport.CLEAR_MODE_NEVER
+		vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+		add_child(vp)
+		var r = ColorRect.new()
+		r.size = Vector2(W, H)
+		var m = ShaderMaterial.new()
+		m.shader = load("res://labs/water_lab/ripple_sim.gdshader")
+		m.set_shader_parameter("grid", Vector2(W, H))
+		m.set_shader_parameter("damp", DAMP)
+		r.material = m
+		vp.add_child(r)
+		sim_vps.append(vp)
+		sim_mats.append(m)
+	sim_mats[0].set_shader_parameter("state", sim_vps[1].get_texture())
+	sim_mats[1].set_shader_parameter("state", sim_vps[0].get_texture())
+	sim_vps[1].render_target_update_mode = SubViewport.UPDATE_ONCE # start from zero
+
+func _gpu_step() -> void:
+	# write the target that holds the older state, reading the newer one
+	sim_i = 1 - sim_i
+	var m = sim_mats[sim_i]
+	var arr = PackedVector4Array()
+	for d in pending.slice(0, 8):
+		arr.append(d)
+	while arr.size() < 8:
+		arr.append(Vector4.ZERO)
+	m.set_shader_parameter("drops", arr)
+	m.set_shader_parameter("n_drops", mini(pending.size(), 8))
+	pending = pending.slice(8)
+	sim_vps[sim_i].render_target_update_mode = SubViewport.UPDATE_ONCE
+	tex = sim_vps[sim_i].get_texture()
+	mat.set_shader_parameter("height_tex", tex)
+	for cm in caus_mats:
+		cm.set_shader_parameter("height_tex", tex)
+	if surf_mat:
+		surf_mat.set_shader_parameter("height_tex", tex)
 
 func _build_caustics(vsz: Vector2) -> void:
 	# half-resolution HDR caustics target (a full-res one showed hatching at the folds), ray grid ~1.5 px, redrawn every frame (additive ray grid)
@@ -128,7 +211,13 @@ func _build_caustics(vsz: Vector2) -> void:
 		caus_vp.add_child(mi)
 		caus_mats.append(m)
 
+func drop_at(uv: Vector2, amt: float, r: float = 2.6) -> void:
+	_drop(uv, amt, r)
+
 func _drop(uv: Vector2, amt: float, r: float = 3.2) -> void:
+	if use_gpu:
+		pending.append(Vector4(uv.x, uv.y, amt, r))
+		return
 	var cx = uv.x * W
 	var cy = uv.y * H
 	var ri = int(ceil(r * 2.0))
@@ -149,18 +238,25 @@ func _step() -> void:
 	cur = nxt
 
 func _process(delta: float) -> void:
+	var us0 = Time.get_ticks_usec()
 	t += delta
 	drop_acc += delta * settings.drops
 	while drop_acc >= 1.0:
 		drop_acc -= 1.0
 		_drop(Vector2(rng.randf_range(0.1, 0.9), rng.randf_range(0.08, 0.92)), rng.randf_range(0.15, 0.35), rng.randf_range(1.6, 2.6))
-	_step()
-	_step()
-	img.set_data(W, H, false, Image.FORMAT_RF, cur.to_byte_array())
-	tex.update(img)
+	if use_gpu:
+		_gpu_step()
+	else:
+		_step()
+		_step()
+		img.set_data(W, H, false, Image.FORMAT_RF, cur.to_byte_array())
+		tex.update(img)
 	mat.set_shader_parameter("time", t)
 	for m in caus_mats:
 		m.set_shader_parameter("time", t)
+	if surf_mat:
+		surf_mat.set_shader_parameter("time", t)
+	proc_us += Time.get_ticks_usec() - us0
 
 func _input(e: InputEvent) -> void:
 	var vs = get_viewport().get_visible_rect().size
