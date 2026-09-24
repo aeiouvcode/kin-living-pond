@@ -4,6 +4,7 @@ Labs (branch-only): `-- --lab=fish` (godot/labs/fish_lab.gd) and `-- --lab=water
 
 Project: /godot (Godot 4.5.2, Compatibility renderer). main.tscn -> root.gd, which hosts main.gd (koi pond) or bowl.gd (glass bowl); chip switches. Movie render: add `-- --scene=pond` or `-- --scene=bowl`.
 Render frames: `xvfb-run -a godot --rendering-driver opengl3 --write-movie /tmp/mv/f.png --fixed-fps 30 --quit-after 240` (phone viewport from project.godot). For desktop, write an override.cfg with `[display] window/size/viewport_width=1280 / viewport_height=800`, render, then delete it.
+Pond Next: `-- --lab=pond [--autotap=1] [--gpu=0] [--perf=1]`. Branch web build: `sh build.sh "Web Next"` -> godot/export_next/ (gitignored; boots straight into the pond via feature tag kin_next). Browser QA: serve export_next with `python3 -m http.server 8765 --bind 127.0.0.1` and run a Playwright check at 390x844 and 1280x800 (console, external requests, tap).
 Web build: ./build.sh, then QA CSP, phone and desktop frames on the export.
 Deploy: live /godot/ on main = two-scene build from c11 (main b74a131, pck md5 1aa3fd49), approved by Naksh Sep 24 12:23 ("Sure this works"). Further live updates need a new go; branch pushes continue each cycle.
 Next: fix the CHECKPOINT open list in order, rebuild web export, QA, send side-by-side audit. Branch pushes are allowed (hold lifted Sep 24); main and live /godot/ still need a new owner go.
