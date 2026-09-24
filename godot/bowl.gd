@@ -114,7 +114,7 @@ func _measure() -> void:
 	grid = Vector2i(maxi(16, int(vis.x / 4.4)), maxi(16, int(vis.y / 4.4)))
 
 func _fish_scale() -> float:
-	return clampf(radius / 218.0, 0.9, 2.6) * 1.4
+	return clampf(radius / 218.0, 0.9, 1.6) * 1.4
 
 func _mk_sim_vp() -> Array:
 	var vp = SubViewport.new()

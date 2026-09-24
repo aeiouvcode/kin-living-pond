@@ -183,7 +183,9 @@ func update(dt: float, pond, fishes: Array) -> void:
 					var push = 1.0 - dd / r2
 					var wgt = 1.0 if mi == 0 else 0.6
 					desire += dv / dd * push * 3.0 * wgt
-					pos += dv / dd * push * 70.0 * dt * wgt
+					var np = pos + dv / dd * push * 45.0 * dt * wgt
+					if pond.cpu_sdf(np) < -30.0:
+						pos = np
 	var want_h = desire.angle() if desire.length() > 0.01 else heading
 	var dh = wrapf(want_h - heading, -PI, PI)
 	var mt = turn_rate * dt

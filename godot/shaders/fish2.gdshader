@@ -57,6 +57,11 @@ void fragment() {
 			col += vec3(0.16, 0.22, 0.48) * spec * 0.35;
 			col += vec3(0.1, 0.13, 0.3) * rim * 0.5;
 		}
+		if (kind > 0.5) {
+			// Velvet demekin: a softly ruffled outline instead of a clean curve.
+			float ruf = vn(vec2(uv.x * 26.0, step(0.0, x) * 7.0 + seed)) + 0.5 * vn(vec2(uv.x * 55.0, step(0.0, x) * 3.0 + seed));
+			edge -= 0.09 * ruf * smoothstep(0.12, 0.35, uv.x);
+		}
 		a = smoothstep(0.0, 0.14, edge);
 	} else if (part < 0.75) {
 		float streak = 0.88 + 0.12 * sin(uv.y * 40.0 + uv.x * 5.0 + vn(uv * vec2(3.0, 12.0) + seed) * 3.0);
@@ -79,7 +84,7 @@ void fragment() {
 		col = ee.rgb;
 		a = ee.a;
 	}
-	col = mix(col, water_col, clamp(depth * 0.35, 0.0, 0.4));
+	col = mix(col, water_col, clamp(depth * 0.2, 0.0, 0.18));
 	col += vec3(1.0, 0.9, 0.95) * glow * 0.1;
 	// Keep fish inside the glass: fade out just inside the rim.
 	vec2 bp = (SCREEN_UV - bowl.xy) * vec2(1.0, 1.0 / bowl.w);

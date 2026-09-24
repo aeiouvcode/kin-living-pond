@@ -1,5 +1,17 @@
 # Checkpoint
 
+- 2026-09-24 11:54 IST, cycle 11: demekin outline, depth, sizing.
+  - Demekin body edge is softly ruffled (two-octave noise on the outline from the shoulder back), closer to the reference's velvet silhouette.
+  - Depth tint cut (max 0.18 water mix, was 0.4) so a deep ryukin stays readable.
+  - Desktop fish scale capped (radius factor 1.6, was 2.6): the fish were so big on desktop that two of them could not fit above the card; now they have room.
+  - Separation nudge can no longer push a fish out through the glass or under the card (nudge skipped when it would land near the wall). A hard pull-back was tried and reverted: the sudden jumps tore the fins into shards.
+  - Web QA: phone boot 5.1 s, desktop 4.4 s, 10 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK.
+- Still worse than reference, in order:
+  1. The two fish still touch and slightly overlap when both head for the same spot (seen in web frames right after the chip click).
+  2. Phone: the bowl is cut off at the sides.
+  3. His sakura are bigger, denser and more layered.
+  4. Demekin ruffle is subtle at phone size.
+
 - 2026-09-24 10:50 IST, cycle 10: fish spacing and ryukin shape.
   - Separation now checks head, mid-body and rear body on both fish (3x3 pairs), with a radius from body widths plus a share of length and a firmer positional push. At desktop scale the fish no longer slide over each other's backs (checked across 300 render frames and the web frames).
   - Ryukin slimmer with a longer veil (len 108, w 55, tail 215), closer to the reference frame.
