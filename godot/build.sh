@@ -6,6 +6,7 @@ PRESET=${1:-Web}
 OUT=export
 [ "$PRESET" = "Web Next" ] && OUT=export_next
 mkdir -p $OUT
+touch $OUT/.gdignore # keep the editor from importing the exported pngs
 "$GODOT" --headless --export-release "$PRESET" $OUT/index.html
 OUT=$OUT python3 - <<'PY'
 import re, hashlib, base64
