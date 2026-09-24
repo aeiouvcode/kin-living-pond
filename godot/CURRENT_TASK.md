@@ -1,5 +1,10 @@
 # Current task
 
+TWO WORKSTREAMS (Naksh, Sep 24 2:36-2:40 PM): fish design and fluid are built separately and integrated later, the way Hakozaki works. The fish needs a realistic 3D redesign to compete with RYUKIN, and the project should be showcased with a variety of settings (camera modes + FOV, quality, effect toggles, colour grading, fish count/size, tank/background, style modes like pixel/low-poly/wireframe driven by one motion rig).
+- Fish lab: godot/labs/fish_lab.gd (+ fish_body/fish_fin shaders). Run: `godot --path godot -- --lab=fish --cam=34|top|side --kind=both|ryukin|demekin --tail=1 --fin=0.8 --fov=34`.
+- Fluid lab: godot/labs/water_lab (next).
+- Bowl/pond scenes stay as they are until both labs are strong. Nothing live without a new go.
+
 Naksh's call (Sep 24, 7:27 AM): build BOTH the koi pond and the glass bowl. root.gd hosts either one, with a chip (top right) to switch; the choice is saved locally.
 
 Cycle 7 done: demekin veil stays a fan (min strand gap), velvety lumps, fuller fins, no pale ripple band. Cycle 8 done: fish stay above the naming card; closer desktop framing. Cycle 9 done: soft ragged demekin veil (no wedge), layered veil flutter. Cycle 10 done: fish keep apart along the whole body; slimmer ryukin, longer veil. Cycle 11 done: ruffled demekin outline, less depth fade, desktop fish sized to fit. Cycle 12 done: fish keep a visible gap (whole body + veil, look-ahead sidestep and yield); denser, bigger sakura (mostly flowers); first Clearwater-style caustics on the bowl floor. Cycle 13 done: inky demekin veil (no grey smear), wall margins scale with fish size and watch the veil tip. Next: black-fish ruffle at phone size, petal depth layering, boot splash colour. Water reference (Naksh said yes, Sep 24 12:41, to KIN studying Clearwater for its water pass): https://github.com/Aureliengmz/clearwater (MIT).

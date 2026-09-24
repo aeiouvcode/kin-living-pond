@@ -1,5 +1,15 @@
 # Checkpoint
 
+- 2026-09-24 15:50 IST, cycle 14: fish lab v1 (workstream split).
+  - New 3D fish lab (Compatibility renderer): procedural lofted body from nose to caudal peduncle with egg-shaped, superelliptic sections, a high back behind the head (ryukin hump) and a narrow peduncle; soft-sheen body shader (faint scale lattice only in the sheen, peach/red patches on the ryukin, velvet black with a cool rim light on the demekin); double tail as four drooping sheets, tall dorsal, paired pectoral/pelvic/anal fins; thin double-sided fin shader (rays, edges fading to clear, back-light, faint prismatic edge glint); one spine wave drives body and fins, with fins lagging and rippling like cloth. Eyes with iris rings; demekin telescope eyes on stalks. Cameras: 3/4 orbit, top, side.
+  - Workspace reset twice this afternoon and uncommitted work was lost once; the push tool now lives in the repo (godot/tools/mkpush.py) and work is committed as soon as it renders.
+- Still worse than the reference / real fancy goldfish, in order:
+  1. Top view: the double tail reads as one flat fan; his ryukin tail is two big overlapping lobes that fold and drape.
+  2. Demekin telescope eyes look mechanical (cylinder + ring); they should be smooth domes growing out of the head.
+  3. Body lacks the gill plate, mouth and a head-to-body transition; the ryukin reads as a smooth egg.
+  4. Fins are flat sheets; real veils curl at the edges and fold along rays.
+  5. No showcase settings panel yet.
+
 - 2026-09-24 14:00 IST, cycle 13: black veil.
   - Cause of the desktop grey smear: the demekin veil was semi-transparent over most of its area, and on desktop (fish ~2x bigger) the tail trailed past the glass where the rim fade thinned it further. Fixes: veil is now near-opaque ink through its body with a faint blue sheen, softness only in the ragged last stretch and on noise-feathered side edges (a first opaque try showed a hard wedge outline; feathering removed it). Wall-avoidance margins now scale with fish size, and the fish also steers inward when its veil tip nears the glass.
   - Checked desktop 1280x800 render frames (crops of the demekin over ~10 s) and the web frames on phone and desktop: veil reads black and full, no grey smear.

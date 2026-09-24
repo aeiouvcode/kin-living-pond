@@ -11,6 +11,13 @@ var chip: Button
 var layer: CanvasLayer
 
 func _ready() -> void:
+	# Workstream labs (branch-only, CLI): --lab=fish shows the fish on their own.
+	for a in OS.get_cmdline_user_args():
+		if a == "--lab=fish":
+			var lab = Node3D.new()
+			lab.set_script(load("res://labs/fish_lab.gd"))
+			add_child(lab)
+			return
 	var cfg = ConfigFile.new()
 	if cfg.load(PREF_PATH) == OK:
 		var s = str(cfg.get_value("kin", "scene", "pond"))
