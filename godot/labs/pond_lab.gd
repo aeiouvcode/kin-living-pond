@@ -6,9 +6,15 @@ extends "res://labs/fish_lab.gd"
 ## Tap: a food pellet lands, rings spread, the nearest fish comes to eat.
 
 const FLOOR_DROP = 1.3
+const GAP_SOFT = 1.5 # steer away inside this distance (centre lines; veils are ~0.3 wide each side)
+const GAP_HARD = 0.75 # centre lines never closer than this, so veils do not overlap
+const GAP_FEED = 0.5 # at a pellet the veils may brush, never cross
+const HEAD_L = 0.45 # nose ahead of the fish origin
+const TAIL_L = 1.3 # veil tip behind it
 const FISH_S = 0.9 # floor sits this far below the fish (for shadow offset)
 var water: Node2D
 var caus_set := false
+var gap_min := 1e9
 var agents = []
 var food = []
 var half := Vector2(2.4, 5.0) # visible half extents at fish depth (x, z)
@@ -17,11 +23,18 @@ var rng2 := RandomNumberGenerator.new()
 var kiss_t := 9.0
 var perf_acc := 0.0
 var perf_n := 0
+var adapt_t := 0.0
+var adapt_frames := 0
+var adapt_level := 0
 var pond_us := 0
 
 func _ready() -> void:
+	settings["gapqa"] = 0.0 # QA: print the closest body/veil gap every 2 s
+	settings["qaw"] = 0.0 # QA: pretend viewport size for headless steering runs
+	settings["qah"] = 0.0
 	settings["autotap"] = 0.0 # QA: drop food automatically at t = 2 s
 	settings["caus"] = 1.0 # light net on the fish (0 = off)
+	settings["adapt"] = 1.0 # lower the costliest passes if a device cannot hold ~45 fps
 	settings["perf"] = 0.0 # QA: print average process time
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--") and a.contains("="):
@@ -66,6 +79,8 @@ func _ready() -> void:
 
 func _frame() -> void:
 	var vsz = get_viewport().get_visible_rect().size
+	if settings.get("qaw", 0.0) > 0.0:
+		vsz = Vector2(settings.qaw, settings.qah)
 	var land = vsz.x > vsz.y
 	# phone: the width frames the pond; desktop: the height does, from a little
 	# higher, so the fish keep a calm size and room to swim
@@ -77,19 +92,40 @@ func _frame() -> void:
 	half = Vector2(h * vsz.x / vsz.y, h) if land else Vector2(h, h * vsz.y / vsz.x)
 
 func _pick_target(a: Dictionary) -> void:
+	# a few random spots; keep the one with the most room from the other fish
+	# (their bodies and where they are heading), so the two drift apart
 	var m = Vector2(half.x - 0.9, half.y - 1.0)
-	a.target = Vector3(rng2.randf_range(-m.x, m.x), depth_y, rng2.randf_range(-m.y, m.y))
+	var best = -1.0
+	for k in 6:
+		var c = Vector3(rng2.randf_range(-m.x, m.x), depth_y, rng2.randf_range(-m.y, m.y))
+		var room = 1e9
+		for o in agents:
+			if o == a:
+				continue
+			room = minf(room, minf(Vector2(c.x - o.pos.x, c.z - o.pos.z).length(), Vector2(c.x - o.target.x, c.z - o.target.z).length()))
+		room += rng2.randf() * 0.6
+		if room > best:
+			best = room
+			a.target = c
 	a.retarget = rng2.randf_range(7.0, 13.0)
 
 func _process(dt: float) -> void:
 	var us0 = Time.get_ticks_usec()
 	var t0 = t
 	t += dt
+	_adapt(dt)
 	kiss_t -= dt
 	if settings.autotap > 0.0 and t0 < 2.0 and t >= 2.0:
 		var vsz = get_viewport().get_visible_rect().size
-		_spawn_food(vsz * Vector2(0.62, 0.42))
-		_spawn_food(vsz * Vector2(0.4, 0.6))
+		for q in [Vector2(0.62, 0.42), Vector2(0.4, 0.6)]:
+			_spawn_food(vsz * q)
+			water.drop_at(q, 0.28, 2.2) # same plop a real tap makes
+	if settings.gapqa > 0.0 and agents.size() > 1:
+		var cp = _closest_pair(agents[0].pos, _fwd(agents[0]), agents[1].pos, _fwd(agents[1]), 0.0)
+		gap_min = minf(gap_min, Vector2(cp[0].x - cp[1].x, cp[0].z - cp[1].z).length())
+		if int(t0 / 2.0) != int(t / 2.0):
+			print("GAP t=%.0f min=%.3f a=%s b=%s h=%.2f,%.2f half=%s" % [t, gap_min, agents[0].pos, agents[1].pos, agents[0].head, agents[1].head, half])
+			gap_min = 1e9
 	# food sinks slowly and drifts
 	for fd in food:
 		fd.node.position.y = maxf(fd.node.position.y - dt * 0.12, depth_y + 0.15)
@@ -102,6 +138,11 @@ func _process(dt: float) -> void:
 		var best = 1e9
 		for fd in food:
 			var dd = p.distance_to(fd.node.position)
+			# a pellet the other fish is clearly closer to counts as further
+			# away, so the two go for different pellets instead of colliding
+			for o in agents:
+				if o != a and o.pos.distance_to(fd.node.position) < dd - 0.3:
+					dd += 3.0
 			if dd < best:
 				best = dd
 				goal = Vector3(fd.node.position.x, depth_y, fd.node.position.z)
@@ -110,17 +151,33 @@ func _process(dt: float) -> void:
 			_pick_target(a)
 			goal = a.target
 		var fwd = Vector3(cos(a.head), 0, -sin(a.head))
+		var yielding = false
+		a.yield_cd = a.get("yield_cd", 0.0) - dt
 		var want = Vector3(goal.x - p.x, 0, goal.z - p.z)
-		# keep a clear gap from the other fish (body + veil), look ahead
+		want = want.normalized() * minf(want.length(), 2.5 if chasing else 1.5) # the goal pulls, but never louder than the gap rule
+		# keep a clear gap from the other fish along the whole body + veil:
+		# nearest point between this fish's look-ahead body and the other's
+		# head-to-veil-tip line
+		# at feeding time the fish closer to its pellet has right of way; the
+		# other keeps clear of it
+		a.best = best if chasing else 1e9
 		for j in agents.size():
 			if j == i:
 				continue
-			var o: Vector3 = agents[j].pos
-			var ahead = p + fwd * 0.6
-			var dv = Vector3(ahead.x - o.x, 0, ahead.z - o.z)
+			var lead = chasing and a.best <= agents[j].get("best", 1e9)
+			var soft = GAP_HARD + 0.3 if lead else GAP_SOFT
+			var cp = _closest_pair(p, fwd, agents[j].pos, _fwd(agents[j]), 0.6)
+			var dv: Vector3 = cp[0] - cp[1]
+			dv.y = 0.0
 			var dl = dv.length()
-			if dl < 2.0:
-				want += dv.normalized() * (2.0 - dl) * 2.5
+			if dl < soft:
+				want += dv.normalized() * (soft - dl) * (2.0 if lead else 6.0)
+				# the other is in front: this fish yields (slows, heads elsewhere)
+				if not lead and (cp[1] - p).dot(fwd) > 0.0:
+					yielding = true
+					if not chasing and a.retarget > 2.0 and a.get("yield_cd", 0.0) <= 0.0:
+						_pick_target(a)
+						a.yield_cd = 4.0
 		# soft walls
 		var m = Vector2(half.x - 0.7, half.y - 0.8)
 		if p.x > m.x: want.x -= (p.x - m.x) * 4.0
@@ -128,17 +185,35 @@ func _process(dt: float) -> void:
 		if p.z > m.y: want.z -= (p.z - m.y) * 4.0
 		if p.z < -m.y: want.z += (-m.y - p.z) * 4.0
 		var desired = atan2(-want.z, want.x)
+		if settings.gapqa > 1.0 and chasing and int(t0) != int(t):
+			print("CH t=%.0f %s p=(%.2f,%.2f) goal=(%.2f,%.2f) best=%.2f yield=%s want=(%.2f,%.2f)" % [t, a.kind, p.x, p.z, goal.x, goal.z, best, yielding, want.x, want.z])
 		var dh = wrapf(desired - a.head, -PI, PI)
 		var max_turn = 1.1 if chasing else 0.6
 		var turn = clampf(dh * 1.2, -max_turn, max_turn)
 		a.turn = lerpf(a.turn, turn, 1.0 - exp(-dt * 2.0))
 		a.head += a.turn * dt
 		var sp_target = 0.62 if chasing else (0.3 + 0.08 * sin(t * 0.3 + i * 2.0))
+		if chasing:
+			# ease in on the pellet so the turn circle never orbits it
+			sp_target *= clampf(best / 1.2, 0.3, 1.0)
 		if absf(dh) > 1.4:
 			sp_target *= 0.5 # slow down to turn around
+		if yielding:
+			sp_target *= 0.55
 		a.speed = lerpf(a.speed, sp_target, 1.0 - exp(-dt * 1.5))
 		fwd = Vector3(cos(a.head), 0, -sin(a.head))
 		p += fwd * a.speed * dt
+		# hard gap: if the bodies still get too close, ease this fish sideways
+		for j in agents.size():
+			if j == i:
+				continue
+			var cp = _closest_pair(p, fwd, agents[j].pos, _fwd(agents[j]), 0.0)
+			var dv: Vector3 = cp[0] - cp[1]
+			dv.y = 0.0
+			var dl = dv.length()
+			var hard = GAP_FEED if (a.best < 1.2 or agents[j].get("best", 1e9) < 1.2) else GAP_HARD
+			if dl < hard and dl > 1e-4:
+				p += dv / dl * (hard - dl) * 0.5 # both fish do this, so the gap closes fully
 		# eat
 		for fd in food.duplicate():
 			var nose = p + fwd * 0.4
@@ -147,6 +222,8 @@ func _process(dt: float) -> void:
 				fd.node.queue_free()
 				food.erase(fd)
 				a.rise = 1.0
+				if settings.gapqa > 0.0:
+					print("ATE t=%.1f by %s" % [t, a.kind])
 		# now and then one fish kisses the surface
 		if kiss_t <= 0.0 and i == int(t) % agents.size():
 			kiss_t = rng2.randf_range(14.0, 22.0)
@@ -177,6 +254,48 @@ func _process(dt: float) -> void:
 			perf_acc = 0.0
 			perf_n = 0
 
+# Quality fallback for slow devices, measured on real frame time (not the
+# fixed movie clock): after a short warm-up, if a 3 s window averages under
+# 45 fps, step down once per window: 1) light net redrawn every other frame,
+# 2) the 3D fish drawn at 75% resolution. Never steps back up (no flicker).
+func _adapt(dt: float) -> void:
+	if settings.adapt <= 0.0 or adapt_level >= 2 or Engine.get_write_movie_path() != "" or t < 4.0:
+		return
+	adapt_t += dt
+	adapt_frames += 1
+	if adapt_t < 3.0:
+		return
+	var fps = adapt_frames / adapt_t
+	adapt_t = 0.0
+	adapt_frames = 0
+	if fps >= 45.0:
+		return
+	adapt_level += 1
+	if adapt_level == 1:
+		water.caus_every = 2
+	else:
+		get_viewport().scaling_3d_scale = 0.75
+	if settings.perf > 0.0:
+		print("ADAPT level=%d fps=%.1f" % [adapt_level, fps])
+
+func _fwd(a: Dictionary) -> Vector3:
+	return Vector3(cos(a.head), 0, -sin(a.head))
+
+# nearest points between two fish, each a line from nose to veil tip
+# (sampled; 7 points each is plenty at this scale)
+func _closest_pair(p: Vector3, f: Vector3, q: Vector3, g: Vector3, look: float) -> Array:
+	var best = 1e9
+	var out = [p, q]
+	for u in 7:
+		var a = p + f * (HEAD_L + look - (HEAD_L + look + TAIL_L) * u / 6.0)
+		for v in 7:
+			var b = q + g * (HEAD_L - (HEAD_L + TAIL_L) * v / 6.0)
+			var d = Vector2(a.x - b.x, a.z - b.z).length_squared()
+			if d < best:
+				best = d
+				out = [a, b]
+	return out
+
 func _shadows() -> void:
 	if not caus_set and water and water.caus_vp:
 		caus_set = true
@@ -185,7 +304,7 @@ func _shadows() -> void:
 			for c in f.find_children("*", "MeshInstance3D", true, false):
 				if c.material_override is ShaderMaterial:
 					c.material_override.set_shader_parameter("caus_tex", ct)
-					c.material_override.set_shader_parameter("caus_amt", (0.9 if c.material_override.shader == BodyShader else 0.5) * settings.caus)
+					c.material_override.set_shader_parameter("caus_amt", (0.9 if c.material_override.shader == BodyShader else 0.25) * settings.caus)
 	if not water or not water.mat:
 		return
 	var vsz = get_viewport().get_visible_rect().size
