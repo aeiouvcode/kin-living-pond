@@ -15,6 +15,10 @@ uniform float refl = 1.0;
 uniform float crisp = 1.0;
 uniform float density = 0.55;
 uniform float slope = 1.0;
+// Pond Next: soft fish shadows on the floor. xy = screen uv, z = body length
+// (fraction of screen width), w = heading angle in screen space.
+uniform vec4 fish_sh[2];
+uniform float sh_amt = 0.0;
 
 
 vec2 hash2(vec2 p) {
@@ -113,6 +117,21 @@ void fragment() {
 	base.g = floor_col(p + off).g;
 	base.b = floor_col(p + off * (1.0 + ch)).b;
 
+	// fish shadows: soft ellipse for the body, fainter longer one for the veil;
+	// they also block the light net
+	float shade = 0.0;
+	for (int k = 0; k < 2; k++) {
+		vec4 fs = fish_sh[k];
+		if (fs.z <= 0.0) { continue; }
+		vec2 q = (uv + p_to_uv_delta(off) * 0.5 - fs.xy) * vec2(1.0, aspect);
+		float ca = cos(fs.w);
+		float sa = sin(fs.w);
+		q = vec2(q.x * ca + q.y * sa, -q.x * sa + q.y * ca);
+		float body = length((q - vec2(0.05 * fs.z, 0.0)) / vec2(0.55 * fs.z, 0.26 * fs.z));
+		float veil = length((q + vec2(0.75 * fs.z, 0.0)) / vec2(0.7 * fs.z, 0.42 * fs.z));
+		shade = max(shade, smoothstep(1.0, 0.55, body) * 0.95 + smoothstep(1.0, 0.2, veil) * 0.3);
+	}
+	shade = clamp(shade, 0.0, 1.0) * sh_amt;
 	// caustics from the ray-grid pass, looked up where this pixel's view ray
 	// meets the floor
 	vec2 fuv = uv + p_to_uv_delta(off);
@@ -130,6 +149,10 @@ void fragment() {
 	caus = mix(vec3(1.0), caus, clamp(1.25 - 0.35 * dl, 0.45, 1.0)); // deeper water spreads the net thinner
 	vec3 cl = max(caus - 1.0, vec3(0.0));
 	vec3 sun = mix(vec3(1.0), vec3(1.0, 0.9, 0.74), warm);
+	caus = mix(caus, vec3(0.55), shade);
+	cl *= 1.0 - shade;
+	glow *= 1.0 - shade;
+	base *= 1.0 - 0.5 * shade;
 	vec3 col = base * (0.72 + 0.24 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08 + sun * glow * 0.1 * bloom;
 
 	// depth tint and a soft vignette
