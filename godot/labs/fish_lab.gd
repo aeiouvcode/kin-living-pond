@@ -228,8 +228,8 @@ func _build_fish(kind: String) -> Node3D:
 	# Eyes: socket rim of body tissue, gold iris disc with a black pupil, and
 	# a clear glossy lens dome on top (real goldfish eyes are lens + iris).
 	for side in [-1.0, 1.0]:
-		var er = 0.046 if kind == "ryukin" else 0.07
-		var ez = 0.118 if kind == "ryukin" else 0.2
+		var er = 0.056 if kind == "ryukin" else 0.074
+		var ez = 0.114 if kind == "ryukin" else 0.2
 		var ep = Vector3(0.235, 0.06, side * ez)
 		var out = Vector3(0.25, 0.05, side).normalized() # eye faces out and slightly forward
 		var basis = Basis.looking_at(-out, Vector3.UP) # -Z of this basis points outward
