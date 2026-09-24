@@ -2,11 +2,15 @@
 # Export the web build and add a strict Content-Security-Policy.
 set -e
 GODOT=${GODOT:-../Godot_v4.5.2-stable_linux.x86_64}
-mkdir -p export
-"$GODOT" --headless --export-release "Web" export/index.html
-python3 - <<'PY'
+PRESET=${1:-Web}
+OUT=export
+[ "$PRESET" = "Web Next" ] && OUT=export_next
+mkdir -p $OUT
+"$GODOT" --headless --export-release "$PRESET" $OUT/index.html
+OUT=$OUT python3 - <<'PY'
 import re, hashlib, base64
-p = 'export/index.html'
+import os
+p = os.environ.get('OUT', 'export') + '/index.html'
 h = open(p).read()
 hashes = []
 for m in re.finditer(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', h, re.S):
