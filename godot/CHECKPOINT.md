@@ -1,5 +1,15 @@
 # Checkpoint
 
+- 2026-09-24 22:53 IST, cycle 23: fish turn - body section and side fins. Tested solo (model_test.sh sheets, before = c21 kin-mt3, after = kin-mt4).
+  - Ryukin body: laterally compressed (narrower), tapered snout, and the upper section narrows into a dorsal ridge, so it reads as a tall teardrop head-on and slimmer from the top instead of an egg.
+  - Side fins: pectorals, pelvics and the anal pair are now real fans (longer, twice as wide, 10-12 subdivisions) with rounded scalloped edges that cup and hang; they show in both silhouettes on both fish.
+- Still worse, per model:
+  1. Veils still single sheets, no darker layering where lobes overlap.
+  2. No fish defocus (only the grid blurs).
+  3. Demekin eye sockets read as black tyres from the front on desktop; need body-coloured, softer rims.
+  4. Ryukin head-on is better but still round at the belly; the hump still reads mainly from the side.
+  5. Settings panel style and style modes still open.
+
 - 2026-09-24 21:58 IST, cycle 22: fluid turn - floor, canopy, crisper net.
   - Sand: warm, with large drift patches and fine grain; absorption retuned (less red loss, lighter aqua tint) so the floor no longer reads grey-olive.
   - Pebbles: sparser, gathered in drifts with bare sand between (`--density=0..1`, default 0.55), mineral speckle and a small wet highlight toward the sun; skipped stones cast no contact shadow.
