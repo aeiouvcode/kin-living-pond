@@ -1,5 +1,17 @@
 # Checkpoint
 
+- 2026-09-24 21:58 IST, cycle 22: fluid turn - floor, canopy, crisper net.
+  - Sand: warm, with large drift patches and fine grain; absorption retuned (less red loss, lighter aqua tint) so the floor no longer reads grey-olive.
+  - Pebbles: sparser, gathered in drifts with bare sand between (`--density=0..1`, default 0.55), mineral speckle and a small wet highlight toward the sun; skipped stones cast no contact shadow.
+  - Canopy reflection: blossom clusters with bright sky showing through the gaps instead of one flat pink wash.
+  - Caustics: tighter soften taps (`--crisp=0..1`) bring back line sharpness lost in c20; no zipper at phone size.
+  - Frame cost: the stone-drift lookup is once per pixel (a per-cell version made the desktop frame render too slow to finish).
+- Still worse than Clearwater / real water, in order:
+  1. With --crisp=1, strong new drop rings fold into bright white blobs (seen on desktop early frames); needs an energy clamp on fold cusps.
+  2. The canopy reads as faint pink stains, not a readable tree; needs soft blur and a darker branch structure.
+  3. Desktop sand still flattens to khaki between lines; no depth slope across the pool.
+  4. No on-screen settings panel; web frame cost still not measured on the export.
+
 - 2026-09-24 20:52 IST, cycle 21: fish turn - veil pleats, rim-only fresnel, velvet demekin, bigger eyes. Tested solo (debug stage + model_test.sh contact sheets, before = c19 sheets).
   - Veils: vertex fold along the fin rays (pleats), the far side of each fold shades darker; fresnel is limited to a thin rim band so fins glow at the edge instead of washing out the whole sheet (Alpha Fresnel / Rim Glow sliders drive it).
   - Demekin body: matte velvet with a blue-violet grazing sheen instead of glossy black; copper iris now shows.
