@@ -211,7 +211,7 @@ func _update_fins(dt: float) -> void:
 	var back = (spine[N - 1] - spine[N - 2]).normalized()
 	var side = back.orthogonal()
 	var tseg = tail_len / float(TM - 1)
-	var spread = 0.55 + 0.2 * (1.0 - clampf(speed / 40.0, 0.0, 1.0))
+	var spread = (0.68 if kind == 0 else 0.66) + 0.2 * (1.0 - clampf(speed / 40.0, 0.0, 1.0))
 	var beat = sin(phase) * 0.35
 	var k = clampf(dt * 60.0, 0.2, 1.0)
 	for s in strands.size():
@@ -256,6 +256,27 @@ func _update_fins(dt: float) -> void:
 			for i in range(2, TM):
 				m[i] = m[i].lerp((a[i] + c[i]) * 0.5, 0.25)
 			strands[s] = m
+	# Keep the strands in order across the veil at every joint. If two swap
+	# sides the membrane between them flips over and draws as a dark shard.
+	for i in range(1, TM):
+		var m = Vector2.ZERO
+		var mp = Vector2.ZERO
+		for s in S:
+			m += strands[s][i]
+			mp += strands[s][i - 1]
+		m /= float(S)
+		mp /= float(S)
+		var lat = (m - mp).normalized().orthogonal()
+		var minsep = width * 0.03 * (1.0 + float(i) * 0.3)
+		var prev_p = -INF
+		for s in S:
+			var st: PackedVector2Array = strands[s]
+			var pj = (st[i] - m).dot(lat)
+			if pj < prev_p + minsep:
+				st[i] += lat * (prev_p + minsep - pj)
+				pj = prev_p + minsep
+				strands[s] = st
+			prev_p = pj
 	var fwd = Vector2.from_angle(heading)
 	for sd in 2:
 		var sgn = -1.0 if sd == 0 else 1.0
@@ -283,7 +304,7 @@ func _w(u: float) -> float:
 		var head1 = pow(clampf(u / 0.1, 0.0, 1.0), 0.4)
 		return width * 0.5 * pow(s, 0.45) * (0.7 + 0.3 * head1) * (1.0 - 0.7 * smoothstep(0.45, 1.0, u))
 	var head = pow(clampf(u / 0.18, 0.0, 1.0), 0.5)
-	return width * 0.5 * pow(s, 0.75) * (0.55 + 0.45 * head) * (1.0 - 0.45 * smoothstep(0.55, 1.0, u))
+	return width * 0.5 * pow(s, 0.6) * (0.62 + 0.38 * head) * (1.0 - 0.45 * smoothstep(0.55, 1.0, u))
 
 func build_mesh() -> void:
 	var pts = PackedVector2Array()
@@ -353,12 +374,19 @@ func build_mesh() -> void:
 		uvs.append(Vector2(u2, 1.0))
 		for _j in 3:
 			cols.append(body)
-	var nose = sp[0] + tn[0] * width * 0.12 * sc
-	pts.append(nose)
-	uvs.append(Vector2(0.0, 0.5))
-	cols.append(body)
-	var ni = pts.size() - 1
-	ia.append_array([base, ni, base + 1, base + 1, ni, base + 2])
+	# Rounded snout: a half-ellipse cap so the head never ends in a flat cut.
+	var n0 = tn[0].orthogonal()
+	var w0 = _w(0.0) * sc
+	var reach = w0 * (0.75 if kind == 1 else 0.9)
+	var ci = pts.size()
+	for k in range(1, 8):
+		var a5 = PI * float(k) / 8.0
+		pts.append(sp[0] + n0 * w0 * cos(a5) + tn[0] * reach * sin(a5))
+		uvs.append(Vector2(0.0, 0.5 - 0.5 * cos(a5)))
+		cols.append(body)
+	var ring = [base] + range(ci, ci + 7) + [base + 2]
+	for k in ring.size() - 1:
+		ia.append_array([base + 1, ring[k], ring[k + 1]])
 	for i in N - 1:
 		for j in 2:
 			var a3 = base + i * 3 + j

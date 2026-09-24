@@ -1,5 +1,18 @@
 # Checkpoint
 
+- 2026-09-24 07:55 IST, cycle 6: fish craft pass on the bowl.
+  - Ryukin: rounder egg body (pow 0.6, 0.62 head), peach body with less white specular, len 104 / w 62 / tail 185, wider veil fan.
+  - Veil: strand ordering pass so strands never cross; fins fade fully to their side edges (no hard polygon edge).
+  - Demekin: rounded snout cap (half-ellipse fan) replaces the flat cut head; wider veil fan; tail 160.
+  - Koi pond: unchanged, no regression in the phone frame.
+  - Web QA: phone boot 5.4 s, desktop 4.3 s, 14 same-origin requests, 0 external, 0 CSP errors; toggle and reload work on both.
+- Still worse than reference, in order:
+  1. Demekin veil can collapse into one dark whip on hard turns (strands follow one path); needs a minimum strand spacing.
+  2. Demekin still reads flat: no velvety lumps, small dorsal, pectorals are thin grey paddles.
+  3. Naming card covers the bottom of the bowl on phone; fish swim under it.
+  4. Desktop bowl sits small in the frame; the reference is a close macro.
+  5. Veils lack the layered flutter of his (one sheet only).
+
 - 2026-09-24 07:33 IST, cycle 5: both variants in one build. main.tscn -> root.gd, which loads main.gd (koi pond) or bowl.gd (glass bowl). Switch chip top right, label names the other scene; choice saved in user://kin_scene.cfg; each scene keeps its own save. Render a given scene with `-- --scene=pond|bowl`. Web QA: toggle works by real click on phone and desktop, choice survives reload, all requests same-origin, 0 CSP errors.
 - Open next: demekin veil still folds into dark shards sometimes (seen on web at DPR 2); then the bowl list below; koi pond gets its own distance audit next.
 

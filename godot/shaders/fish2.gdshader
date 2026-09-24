@@ -41,14 +41,14 @@ void fragment() {
 		float spec = exp(-pow((x + 0.18) / 0.32, 2.0)) * smoothstep(0.05, 0.3, uv.x) * smoothstep(0.95, 0.45, uv.x);
 		float rim = pow(1.0 - nz, 3.0);
 		if (kind < 0.5) {
-			vec3 base = vec3(1.0, 0.97, 0.95);
-			vec3 peach = vec3(1.0, 0.82, 0.74);
+			vec3 base = vec3(0.99, 0.93, 0.9);
+			vec3 peach = vec3(0.99, 0.76, 0.68);
 			vec3 blush = vec3(0.98, 0.66, 0.68);
 			col = mix(base, peach, smoothstep(0.9, 0.1, abs(x)) * 0.45 * smoothstep(0.0, 0.5, uv.x));
 			float b = smoothstep(0.35, 0.0, uv.x) * 0.8 + vn(vec2(uv.x * 3.0, x * 1.5) + seed) * 0.35 * smoothstep(0.2, 0.5, uv.x) * smoothstep(0.9, 0.6, uv.x);
-			col = mix(col, blush, clamp(b, 0.0, 1.0) * 0.5);
-			col *= 0.8 + 0.22 * nz;
-			col += vec3(1.0) * spec * 0.28;
+			col = mix(col, blush, clamp(b, 0.0, 1.0) * 0.6);
+			col *= 0.78 + 0.2 * nz;
+			col += vec3(1.0) * spec * 0.16;
 			col = mix(col, vec3(1.0, 0.95, 0.97), rim * 0.4);
 		} else {
 			col = vec3(0.03, 0.03, 0.045);
@@ -60,7 +60,7 @@ void fragment() {
 		a = smoothstep(0.0, 0.14, edge);
 	} else if (part < 0.75) {
 		float streak = 0.88 + 0.12 * sin(uv.y * 40.0 + uv.x * 5.0 + vn(uv * vec2(3.0, 12.0) + seed) * 3.0);
-		float sw = 0.12 + 0.3 * (1.0 - smoothstep(0.0, 0.4, uv.x));
+		float sw = 0.22 + 0.25 * (1.0 - smoothstep(0.0, 0.4, uv.x));
 		float side = smoothstep(0.0, sw, uv.y) * smoothstep(1.0, 1.0 - sw, uv.y);
 		// Ragged, soft trailing edge so the veil never reads as a polygon.
 		float rag = 0.72 + 0.22 * vn(vec2(uv.y * 9.0, seed));
@@ -69,10 +69,10 @@ void fragment() {
 		float silk = 0.94 + 0.06 * sin(uv.y * 30.0 + vn(uv * vec2(2.0, 8.0) + seed) * 4.0);
 		if (kind < 0.5) {
 			col = mix(vec3(1.0, 0.9, 0.88), vec3(1.0, 0.99, 1.0), smoothstep(0.0, 0.3, uv.x)) * silk;
-			a = COLOR.g * tip * root * (0.3 + 0.7 * side) * mix(0.95, 0.55, uv.x);
+			a = COLOR.g * tip * root * (0.06 + 0.94 * side) * mix(1.1, 0.7, uv.x);
 		} else {
 			col = mix(vec3(0.03, 0.03, 0.05), vec3(0.09, 0.1, 0.2), smoothstep(0.2, 1.0, uv.x)) * silk;
-			a = clamp(COLOR.g * tip * root * (0.3 + 0.7 * side) * mix(1.15, 0.6, uv.x), 0.0, 0.85);
+			a = clamp(COLOR.g * tip * root * (0.05 + 0.95 * side) * mix(1.15, 0.6, uv.x), 0.0, 0.85);
 		}
 	} else {
 		vec4 ee = eye(uv * 2.0 - 1.0, kind);

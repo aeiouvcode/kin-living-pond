@@ -253,8 +253,8 @@ func random_point(frac: float) -> Vector2:
 
 func _build_fish() -> void:
 	var defs = [
-		{"name": "Momo", "kind": 0, "len": 112.0, "w": 54.0, "tail": 190.0, "bold": 0.45},
-		{"name": "Kuro", "kind": 1, "len": 124.0, "w": 44.0, "tail": 150.0, "bold": 0.75},
+		{"name": "Momo", "kind": 0, "len": 104.0, "w": 62.0, "tail": 185.0, "bold": 0.45},
+		{"name": "Kuro", "kind": 1, "len": 124.0, "w": 44.0, "tail": 160.0, "bold": 0.75},
 	]
 	var s = _fish_scale()
 	for i in defs.size():
