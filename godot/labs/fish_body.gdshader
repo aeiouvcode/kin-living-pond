@@ -3,6 +3,10 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 // Fish lab body: soft sheen, not plastic. Colour from a white base with
 // peach/red patches (ryukin) or velvet black (demekin, kept in form by rim light).
 uniform float kind = 0.0;
+// pond only: the water lab's light net, sampled in screen space so the same
+// dappled light that crosses the floor also slides over the fish
+uniform sampler2D caus_tex : source_color, filter_linear, repeat_disable;
+uniform float caus_amt = 0.0;
 uniform float time_s = 0.0;
 uniform float swim = 1.0;
 uniform float bend = 0.0;
@@ -67,4 +71,9 @@ void fragment() {
 	float velvet = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.6);
 	EMISSION = (kind < 0.5 ? rimc * fr * 0.2 : vec3(0.2, 0.21, 0.42) * velvet * 0.8 + rimc * fr * 0.15) * rim_glow;
 	BACKLIGHT = kind < 0.5 ? vec3(0.5, 0.25, 0.2) : vec3(0.0);
+	if (caus_amt > 0.0) {
+		vec3 cl = texture(caus_tex, SCREEN_UV + NORMAL.xy * 0.01).rgb;
+		float up = clamp(NORMAL.z, 0.0, 1.0);
+		EMISSION += (ALBEDO * 0.7 + 0.3) * max(cl - 0.08, vec3(0.0)) * 1.6 * caus_amt * up;
+	}
 }
