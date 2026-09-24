@@ -11,12 +11,24 @@ var chip: Button
 var layer: CanvasLayer
 
 func _ready() -> void:
+	# Pond Next web preview (branch-only "Web Next" export preset): the
+	# integrated fish + water scene is the whole app.
+	if OS.has_feature("kin_next"):
+		var pn = Node3D.new()
+		pn.set_script(load("res://labs/pond_lab.gd"))
+		add_child(pn)
+		return
 	# Workstream labs (branch-only, CLI): --lab=fish shows the fish on their own.
 	for a in OS.get_cmdline_user_args():
 		if a == "--lab=fish":
 			var lab = Node3D.new()
 			lab.set_script(load("res://labs/fish_lab.gd"))
 			add_child(lab)
+			return
+		if a == "--lab=pond":
+			var pl = Node3D.new()
+			pl.set_script(load("res://labs/pond_lab.gd"))
+			add_child(pl)
 			return
 		if a == "--lab=water":
 			var wl = Node2D.new()
