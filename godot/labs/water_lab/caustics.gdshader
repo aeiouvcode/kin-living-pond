@@ -24,7 +24,13 @@ void vertex() {
 void fragment() {
 	vec2 a = dFdx(src);
 	vec2 b = dFdy(src);
-	float area = abs(a.x * b.y - a.y * b.x);
-	float I = min(area, 4.0) * gain;
+	float sa = a.x * b.y - a.y * b.x;
+	float area = abs(sa);
+	// soft knee: normal light passes as-is, fold cusps (area >> 1) compress
+	// instead of blowing out into white blobs
+	float I = area / (1.0 + max(area - 1.0, 0.0) * 0.35) * gain;
+	// flipped triangles (inside a fold) overlap their neighbours and paint
+	// big flat pale sheets on coarse desktop grids: keep only a trace of them
+	I *= sa > 0.0 ? 1.0 : 0.3;
 	COLOR = vec4(mask * I, 1.0);
 }
