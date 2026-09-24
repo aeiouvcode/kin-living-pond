@@ -12,11 +12,17 @@ uniform float glint = 1.0;
 uniform float warm = 1.0;
 uniform float bloom = 1.0;
 uniform float refl = 1.0;
+uniform float crisp = 1.0;
+uniform float density = 0.55;
+
 
 vec2 hash2(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
 	return fract(sin(p) * 43758.5453);
 }
+
+float vnz(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash2(i).x, hash2(i + vec2(1, 0)).x, u.x), mix(hash2(i + vec2(0, 1)).x, hash2(i + vec2(1, 1)).x, u.x), u.y); }
 
 float sim_h(vec2 uv) { return texture(height_tex, uv).r; }
 
@@ -36,13 +42,17 @@ vec3 floor_col(vec2 p) {
 		float n = sin(p.x * 30.0 + sin(p.y * 7.0) * 2.0) * 0.5 + 0.5;
 		return mix(vec3(0.86, 0.78, 0.64), vec3(0.93, 0.87, 0.74), n * 0.6);
 	}
-	// pebbles: rounded stones scattered on pale sand, not a mosaic
+	// pebbles: rounded stones scattered on warm sand, in drifts with bare sand between
 	vec2 g = p * 16.0;
 	vec2 id = floor(g);
 	vec2 f = fract(g);
 	float sandn = sin(p.x * 60.0 + sin(p.y * 17.0) * 2.0) * 0.5 + 0.5;
-	vec3 col = mix(vec3(0.93, 0.84, 0.74), vec3(0.98, 0.91, 0.80), sandn * 0.5);
+	float big = vnz(p * 2.2 + 4.0);             // large patches: drifts of stones vs open sand
+	float grain = hash2(floor(p * 900.0)).x;      // fine sand grain
+	vec3 col = mix(vec3(0.95, 0.83, 0.68), vec3(1.0, 0.92, 0.79), sandn * 0.45 + big * 0.35);
+	col *= 0.94 + 0.08 * grain;
 	float ao = 1.0;
+	float drift = density * (0.35 + 1.1 * vnz(id * 0.137 + 4.0)); // stone drifts, one lookup per pixel
 	for (int j = -1; j <= 1; j++) {
 		for (int i = -1; i <= 1; i++) {
 			vec2 o = vec2(float(i), float(j));
@@ -51,6 +61,8 @@ vec3 floor_col(vec2 p) {
 			float rad = 0.26 + 0.2 * hv2.x;
 			vec2 r = (o + 0.25 + hv * 0.5 - f) * vec2(1.0, 0.8 + 0.4 * hv2.y);
 			float dd = length(r) / rad;
+			float keep = step(hash2(id + o + 29.0).x, drift);
+			if (keep < 0.5) { continue; }
 			// contact shadow, pushed away from the sun
 			float ds = length(r + vec2(-0.35, -0.55) * rad * 0.35) / rad;
 			ao *= mix(0.62, 1.0, smoothstep(0.85, 1.45, ds));
@@ -65,6 +77,12 @@ vec3 floor_col(vec2 p) {
 				float dome = sqrt(max(1.0 - dd * dd, 0.0));
 				vec2 lr = normalize(vec2(0.35, 0.55));
 				float lit = 0.72 + 0.28 * dome + 0.18 * dot(r / rad, -lr) * dome;
+				// speckle (mineral grains) and a small wet highlight toward the sun
+				float spk = hash2(floor((f - o) * 70.0) + id * 13.0).x;
+				sc *= 0.9 + 0.16 * spk + 0.08 * (vnz(r / rad * 5.0 + pick * 20.0) - 0.5);
+				vec2 hp = r / rad + lr * 0.45;
+				float wet = smoothstep(0.22, 0.05, length(hp * vec2(1.0, 1.4))) * dome;
+				lit += wet * 0.35;
 				col = mix(col * ao, sc * lit, smoothstep(1.0, 0.93, dd));
 				ao = 1.0;
 			}
@@ -93,7 +111,7 @@ void fragment() {
 	// caustics from the ray-grid pass, looked up where this pixel's view ray
 	// meets the floor
 	vec2 fuv = uv + p_to_uv_delta(off);
-	vec2 ct = 0.8 / vec2(textureSize(caus_tex, 0));
+	vec2 ct = mix(0.8, 0.5, crisp) / vec2(textureSize(caus_tex, 0));
 	vec3 caus = (texture(caus_tex, fuv + vec2(ct.x, ct.y)).rgb + texture(caus_tex, fuv + vec2(-ct.x, ct.y)).rgb
 		+ texture(caus_tex, fuv + vec2(ct.x, -ct.y)).rgb + texture(caus_tex, fuv - ct).rgb) * 0.5; // 4-tap soften
 
@@ -106,14 +124,14 @@ void fragment() {
 	glow = max(glow / 8.0 * 2.0 - 1.2, vec3(0.0));
 	vec3 cl = max(caus - 1.0, vec3(0.0));
 	vec3 sun = mix(vec3(1.0), vec3(1.0, 0.9, 0.74), warm);
-	vec3 col = base * (0.66 + 0.26 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08 + sun * glow * 0.1 * bloom;
+	vec3 col = base * (0.72 + 0.24 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08 + sun * glow * 0.1 * bloom;
 
 	// depth tint and a soft vignette
 	vec2 cuv = uv - 0.5;
 	float vig = clamp(1.0 - dot(cuv * vec2(1.3, 0.9), cuv * vec2(1.3, 0.9)) * 1.4, 0.0, 1.0);
 	// Beer-Lambert style absorption: red fades first, so the water reads aqua
-	vec3 absorb = exp(-vec3(0.22, 0.08, 0.06) * depth * (1.3 - 0.5 * vig));
-	col = col * absorb + mix(vec3(0.10, 0.26, 0.34), vec3(0.22, 0.34, 0.36), warm) * (1.0 - absorb.r) * 0.5;
+	vec3 absorb = exp(-vec3(0.10, 0.05, 0.045) * depth * (1.3 - 0.5 * vig));
+	col = col * absorb + mix(vec3(0.10, 0.30, 0.38), vec3(0.16, 0.36, 0.42), warm) * (1.0 - absorb.r) * 0.45;
 
 	// sun glints
 	vec3 L = normalize(vec3(-0.35, -0.55, 0.76));
@@ -129,9 +147,14 @@ void fragment() {
 	vec2 rp = uv * vec2(1.0, grid.y / grid.x) + R.xy * 0.9;
 	float canopy = smoothstep(0.62, 0.05, rp.x + 0.12 * sin(rp.y * 9.0) + 0.06 * sin(rp.y * 23.0 + 1.3));
 	vec3 sky = mix(vec3(0.98, 0.93, 0.88), vec3(0.8, 0.84, 0.98), clamp(rp.y * 0.4, 0.0, 1.0));
-	sky = mix(sky, vec3(0.96, 0.72, 0.78), canopy * 0.8);
+	// canopy is clusters of blossom with bright sky showing through the gaps
+	float leaf = vnz(rp * 14.0) * 0.65 + vnz(rp * 37.0 + 3.0) * 0.35;
+	float gaps = smoothstep(0.38, 0.7, leaf);
+	float cmask = canopy * gaps;
+	vec3 bloss = mix(vec3(0.93, 0.62, 0.72), vec3(1.0, 0.82, 0.86), vnz(rp * 60.0));
+	sky = mix(sky * (1.0 + 0.15 * canopy), bloss, cmask * 0.75);
 	float fres = 0.02 + 0.98 * pow(1.0 - n.z, 5.0);
-	col = mix(col, sky, clamp(fres + 0.05 + 0.4 * canopy, 0.0, 1.0) * refl);
+	col = mix(col, sky, clamp(fres + 0.05 + 0.4 * cmask + 0.1 * canopy, 0.0, 1.0) * refl);
 
 	col = col / (1.0 + max(col - 0.85, vec3(0.0)) * 0.9); // soft shoulder, no blowout
 	COLOR = vec4(col, 1.0);
