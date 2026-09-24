@@ -1,6 +1,6 @@
 # Handoff
 
-Labs (branch-only): `-- --lab=fish` (godot/labs/fish_lab.gd) and `-- --lab=water` (godot/labs/water_lab/). Water lab has launch-arg settings (floor, depth, chroma, glint, drops, wind).
+Labs (branch-only): `-- --lab=fish` (godot/labs/fish_lab.gd) and `-- --lab=water` (godot/labs/water_lab/). Fish debug stage: `--lab=fish --stage=debug`; contact sheet: `GODOT=<binary> godot/tools/model_test.sh ryukin out.png` (needs Pillow). Water lab has launch-arg settings (floor, depth, chroma, glint, drops, wind).
 
 Project: /godot (Godot 4.5.2, Compatibility renderer). main.tscn -> root.gd, which hosts main.gd (koi pond) or bowl.gd (glass bowl); chip switches. Movie render: add `-- --scene=pond` or `-- --scene=bowl`.
 Render frames: `xvfb-run -a godot --rendering-driver opengl3 --write-movie /tmp/mv/f.png --fixed-fps 30 --quit-after 240` (phone viewport from project.godot). For desktop, write an override.cfg with `[display] window/size/viewport_width=1280 / viewport_height=800`, render, then delete it.

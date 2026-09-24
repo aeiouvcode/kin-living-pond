@@ -7,6 +7,7 @@ uniform float time_s = 0.0;
 uniform float swim = 1.0;
 uniform float bend = 0.0;
 uniform float body_len = 1.0;
+uniform float rim_glow = 1.0;
 uniform vec3 patch_col : source_color = vec3(0.98, 0.55, 0.42);
 
 float h21(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
@@ -62,6 +63,6 @@ void fragment() {
 	float fr = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	// Cheap subsurface feel on the pale fish, cool rim light on the black one.
 	vec3 rimc = kind < 0.5 ? vec3(1.0, 0.86, 0.84) : vec3(0.35, 0.45, 0.85);
-	EMISSION = rimc * fr * (kind < 0.5 ? 0.2 : 0.55);
+	EMISSION = rimc * fr * (kind < 0.5 ? 0.2 : 0.55) * rim_glow;
 	BACKLIGHT = kind < 0.5 ? vec3(0.5, 0.25, 0.2) : vec3(0.0);
 }

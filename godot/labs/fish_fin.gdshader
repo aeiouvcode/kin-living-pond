@@ -10,6 +10,9 @@ uniform float body_len = 1.0;
 uniform float phase = 0.0;
 uniform float flutter = 1.0;
 uniform float opacity = 0.8;
+uniform float alpha_min = 0.0;
+uniform float alpha_fresnel = 0.0;
+uniform float rim_glow = 1.0;
 uniform float root_x = 0.0;
 uniform float fork = 0.0;
 uniform vec3 wave_axis = vec3(0.0, 0.0, 1.0);
@@ -50,11 +53,13 @@ void fragment() {
 		col = mix(vec3(0.02, 0.02, 0.03), vec3(0.05, 0.06, 0.12), u);
 		a = min(0.97, a * 1.5);
 	}
+	float fr = pow(1.0 - abs(dot(NORMAL, VIEW)), 2.0);
+	// debug-stage knobs (Hakozaki-style Alpha Intensity / Min / Fresnel)
+	a = clamp(max(a + fr * alpha_fresnel * edge, alpha_min * edge), 0.0, 1.0);
 	ALBEDO = col * rays;
 	ALPHA = a;
 	ROUGHNESS = 0.5;
 	SPECULAR = 0.3;
-	float fr = pow(1.0 - abs(dot(NORMAL, VIEW)), 2.0);
 	BACKLIGHT = kind < 0.5 ? vec3(0.9, 0.8, 0.78) : vec3(0.1, 0.12, 0.25);
-	EMISSION = hue(u * 1.5 + v * 0.7 + fr) * fr * 0.12 * edge + (kind > 0.5 ? vec3(0.2, 0.26, 0.55) * fr * 0.4 : vec3(0.0));
+	EMISSION = (hue(u * 1.5 + v * 0.7 + fr) * fr * 0.12 * edge + (kind > 0.5 ? vec3(0.2, 0.26, 0.55) * fr * 0.4 : vec3(0.0))) * rim_glow;
 }

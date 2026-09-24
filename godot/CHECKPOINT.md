@@ -1,5 +1,15 @@
 # Checkpoint
 
+- 2026-09-24 18:30 IST, cycle 18: solo model tests (Naksh 6:25 PM: Hakozaki "tests every model before using it, separately"; reference post x.com/m_hakozaki/status/2101485567087452339 shows one moon jellyfish on a bare debug grid, orbit camera, live sliders Blur Intensity / Blur Min / Alpha Intensity / Alpha Min / Alpha Fresnel).
+  - Debug stage: `-- --lab=fish --stage=debug [--kind=ryukin|demekin]`. One fish, dark debug grid floor, slow low orbit, live dark knob panel: Model, Alpha Intensity, Alpha Min, Alpha Fresnel (fins), Rim Glow (body + fins), Blur Intensity, Blur Min. The Compatibility renderer has no depth of field, so blur is a stand-in: grid lines soften with distance from the focus plane, never below Blur Min. Landscape keeps the vertical view.
+  - Model test mode: `--kind=` alone, `--light=studio|back|top|flat`, `--anim=` (0 freezes the rig), `--sil=1` flat silhouette, `--turn=deg`. godot/tools/model_test.sh <kind> <out.png> renders an 8-view contact sheet (side, front, top, 3/4, backlit, side and top silhouettes, flat light).
+- What the model tests show (worse-list, per model):
+  1. Silhouettes: both tails are hard triangular wedges and the dorsal is a rectangular blade; real veils have scalloped, drooping, uneven edges. Pectoral/pelvic fins are thin curved slivers.
+  2. Ryukin front view: body is a smooth egg with flat dot eyes; no shoulder hump, no socketed eye.
+  3. Demekin: telescope eyes read, but the orange ring still looks stuck on; black body needs velvet falloff, not gloss.
+  4. Fins at high Alpha Fresnel go chalk-white; fresnel should add edge glow, not flatten the whole sheet.
+  5. Blur is only on the grid; the fish themselves never defocus.
+
 - 2026-09-24 18:10 IST, cycle 17: real floor caustics (Naksh 6:03 PM: "Can use fluid resources i gave or anything that makes this better feasibly").
   - Studied Clearwater's caustics pass (MIT): a grid of sun rays is refracted through the surface and drawn where it lands on the floor, additively; each triangle's brightness is its original area over its landed area, so bunched rays glow. One draw per colour channel with its own refraction strength gives the rainbow fringes.
   - Our version in Godot Compatibility: a half-resolution SubViewport redrawn each frame with a ray-grid ArrayMesh (~1.6 px cells, overscanned at the edges), vertex shader refracts each vertex using the shared surface gradient (sim + swell, in water_common.gdshaderinc), fragment uses dFdx/dFdy area ratio, blend_add, 3 channels. The surface shader looks the caustics up where each view ray meets the floor, with a 4-tap soften.

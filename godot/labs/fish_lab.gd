@@ -7,12 +7,19 @@ extends Node3D
 const BodyShader = preload("res://labs/fish_body.gdshader")
 const FinShader = preload("res://labs/fish_fin.gdshader")
 
-var settings = {"kind": "both", "cam": "34", "fov": 34.0, "tail": 1.0, "fin": 0.8, "orbit": 1.0, "panel": 0.0, "bright": 1.0, "sat": 1.0, "contrast": 1.0, "bg": "lilac"}
+var settings = {"kind": "both", "cam": "34", "fov": 34.0, "tail": 1.0, "fin": 0.8, "orbit": 1.0, "panel": 0.0, "bright": 1.0, "sat": 1.0, "contrast": 1.0, "bg": "lilac", "light": "studio", "anim": 1.0, "sil": 0.0, "turn": -1.0, "stage": "plain", "a_int": 0.8, "a_min": 0.0, "a_fres": 0.0, "rim": 1.0, "blur": 0.4, "blur_min": 0.05}
 const BGS = {"lilac": Color(0.6, 0.62, 0.86), "paper": Color(0.93, 0.91, 0.87), "night": Color(0.07, 0.08, 0.14), "mint": Color(0.7, 0.86, 0.82)}
 var env: Environment
 var ui_panel: PanelContainer
 var cam: Camera3D
 var fish = []
+var grid_mat: ShaderMaterial
+var key: DirectionalLight3D
+var rim: DirectionalLight3D
+# Model test (Naksh, Sep 24 6:25 PM: Hakozaki "tests every model before using it,
+# separately"): --kind=ryukin|demekin alone, --light=studio|back|top|flat,
+# --anim=0..2 (0 freezes the rig), --sil=1 flat silhouette, --turn=deg fixed
+# yaw (or -1 for a slow turntable). tools/model_test.sh renders a contact sheet.
 var t = 0.0
 
 func _ready() -> void:
@@ -22,11 +29,20 @@ func _ready() -> void:
 			if settings.has(kv[0]):
 				settings[kv[0]] = float(kv[1]) if typeof(settings[kv[0]]) == TYPE_FLOAT else kv[1]
 	_env()
+	if settings.stage == "debug":
+		settings.fin = settings.a_int
+		settings.panel = 1.0
+		if settings.kind == "both":
+			settings.kind = "ryukin"
+		_debug_stage()
 	_build_ui()
 	_spawn()
 	cam = Camera3D.new()
 	cam.fov = settings.fov
 	cam.keep_aspect = Camera3D.KEEP_WIDTH
+	var vsz = get_viewport().get_visible_rect().size
+	if settings.stage == "debug" and vsz.x > vsz.y:
+		cam.keep_aspect = Camera3D.KEEP_HEIGHT # landscape: keep the vertical view
 	add_child(cam)
 	_place_cam()
 
@@ -41,6 +57,8 @@ func _spawn() -> void:
 		f.position = Vector3(0, -off * 0.7, 0) if settings.cam == "side" else Vector3(0, 0, off)
 		add_child(f)
 		fish.append(f)
+	_apply_sil()
+	_apply_knobs()
 
 func _env() -> void:
 	var we = WorldEnvironment.new()
@@ -56,16 +74,17 @@ func _env() -> void:
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	we.environment = e
 	add_child(we)
-	var key = DirectionalLight3D.new()
+	key = DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-62, 35, 0)
 	key.light_energy = 0.95
 	key.light_color = Color(1.0, 0.97, 0.93)
 	add_child(key)
-	var rim = DirectionalLight3D.new()
+	rim = DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.55
 	rim.light_color = Color(0.75, 0.82, 1.0)
 	add_child(rim)
+	_light_preset()
 
 # ---------- Anatomy ----------
 # Fancy goldfish: short, deep, egg-shaped body with a high back behind the
@@ -236,30 +255,101 @@ func _build_fish(kind: String) -> Node3D:
 			root.add_child(dome)
 	return root
 
+func _debug_stage() -> void:
+	# Hakozaki-style dev scene: one model, bare grid, orbit camera, live knobs.
+	env.background_color = Color(0.16, 0.17, 0.2)
+	var pm = PlaneMesh.new()
+	pm.size = Vector2(40, 40)
+	var floor_mi = MeshInstance3D.new()
+	floor_mi.mesh = pm
+	floor_mi.position = Vector3(0, -0.9, 0)
+	grid_mat = ShaderMaterial.new()
+	grid_mat.shader = load("res://labs/debug_grid.gdshader")
+	floor_mi.material_override = grid_mat
+	add_child(floor_mi)
+	_apply_knobs()
+
+func _apply_knobs() -> void:
+	if grid_mat:
+		grid_mat.set_shader_parameter("blur_intensity", settings.blur)
+		grid_mat.set_shader_parameter("blur_min", settings.blur_min)
+	for f in fish:
+		for c in f.find_children("*", "MeshInstance3D", true, false):
+			var m = c.material_override
+			if m is ShaderMaterial:
+				m.set_shader_parameter("rim_glow", settings.rim)
+				if m.shader == FinShader:
+					m.set_shader_parameter("opacity", settings.a_int)
+					m.set_shader_parameter("alpha_min", settings.a_min)
+					m.set_shader_parameter("alpha_fresnel", settings.a_fres)
+
+func _light_preset() -> void:
+	match settings.light:
+		"back":
+			key.rotation_degrees = Vector3(-25, 200, 0)
+			key.light_energy = 1.2
+			rim.rotation_degrees = Vector3(-60, 20, 0)
+			rim.light_energy = 0.25
+		"top":
+			key.rotation_degrees = Vector3(-88, 0, 0)
+			key.light_energy = 1.05
+			rim.light_energy = 0.2
+		"flat":
+			key.light_energy = 0.0
+			rim.light_energy = 0.0
+			env.ambient_light_energy = 1.2
+		_:
+			pass
+
+func _apply_sil() -> void:
+	if settings.sil <= 0.0:
+		return
+	env.background_color = Color(0.96, 0.95, 0.92)
+	var m = StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(0.08, 0.08, 0.12)
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for f in fish:
+		for c in f.find_children("*", "MeshInstance3D", true, false):
+			c.material_override = m
+
 func _place_cam() -> void:
 	var target = Vector3(-0.35, 0, 0)
+	var k = 1.0 if settings.kind == "both" else 0.62 # solo model test: fill the frame
 	match settings.cam:
 		"top":
-			cam.position = target + Vector3(0, 4.6, 0.001)
+			cam.position = target + Vector3(0, 4.6 * k, 0.001)
 		"side":
-			cam.position = target + Vector3(0.6, 0.15, 4.6)
+			cam.position = target + Vector3(0.6, 0.15, 4.6 * k)
 		_:
-			cam.position = target + Vector3(2.4, 2.7, 3.2)
+			cam.position = target + Vector3(2.4, 2.7, 3.2) * k
 	cam.look_at(target, Vector3.UP)
 
 func _process(dt: float) -> void:
-	t += dt
+	t += dt * settings.anim
+	for f in fish:
+		if settings.turn >= 0.0:
+			f.rotation_degrees.y = settings.turn
+		elif settings.kind != "both" and settings.stage != "debug":
+			f.rotation.y += dt * 0.35
 	for f in fish:
 		var b = 0.35 * sin(t * 0.4 + f.position.z)
 		for c in f.get_children():
 			if c is MeshInstance3D and c.material_override is ShaderMaterial:
 				c.material_override.set_shader_parameter("time_s", t)
 				c.material_override.set_shader_parameter("bend", b * 0.3)
-	if settings.orbit > 0.0 and settings.cam == "34":
+	if settings.orbit > 0.0 and settings.cam == "34" and (settings.kind == "both" or settings.stage == "debug"):
 		var target = Vector3(-0.35, 0, 0)
 		var a = t * 0.15 * settings.orbit
-		cam.position = target + Vector3(cos(a) * 4.0, 2.7, sin(a) * 4.0)
-		cam.look_at(target, Vector3.UP)
+		if settings.stage == "debug":
+			# low orbit, fish sits in the upper half above the knob panel
+			var land = cam.keep_aspect == Camera3D.KEEP_HEIGHT
+			var rr = 4.4 if land else 3.0
+			cam.position = target + Vector3(cos(a) * rr, 1.0, sin(a) * rr)
+			cam.look_at(target + Vector3(0, -0.2 if land else -0.75, 0), Vector3.UP)
+		else:
+			cam.position = target + Vector3(cos(a) * 4.0, 2.7, sin(a) * 4.0)
+			cam.look_at(target, Vector3.UP)
 
 # ---------- Showcase settings (Hakozaki-style: many knobs, one rig) ----------
 
@@ -288,6 +378,24 @@ func _build_ui() -> void:
 	var vb = VBoxContainer.new()
 	vb.custom_minimum_size = Vector2(250, 0)
 	ui_panel.add_child(vb)
+	if settings.stage == "debug":
+		ui_panel.position = Vector2(12, get_viewport().get_visible_rect().size.y - 330)
+		_opt(vb, "Model", ["ryukin", "demekin"], ["Ryukin", "Demekin"], "kind", func(): _spawn())
+		_slider(vb, "Alpha Intensity", "a_int", 0.0, 1.0, func(): _apply_knobs())
+		_slider(vb, "Alpha Min", "a_min", 0.0, 1.0, func(): _apply_knobs())
+		_slider(vb, "Alpha Fresnel", "a_fres", 0.0, 1.5, func(): _apply_knobs())
+		_slider(vb, "Rim Glow", "rim", 0.0, 3.0, func(): _apply_knobs())
+		_slider(vb, "Blur Intensity", "blur", 0.0, 1.5, func(): _apply_knobs())
+		_slider(vb, "Blur Min", "blur_min", 0.0, 0.5, func(): _apply_knobs())
+		for c in vb.get_children():
+			c.add_theme_font_size_override("font_size", 12)
+			c.add_theme_color_override("font_color", Color(0.9, 0.92, 0.96))
+		var sb2 = StyleBoxFlat.new()
+		sb2.bg_color = Color(0.08, 0.09, 0.11, 0.78)
+		sb2.set_corner_radius_all(10)
+		sb2.set_content_margin_all(10)
+		ui_panel.add_theme_stylebox_override("panel", sb2)
+		return
 	_opt(vb, "Camera", ["34", "top", "side"], ["Orbit", "Top", "Side"], "cam", func(): _place_cam())
 	_opt(vb, "Fish", ["both", "ryukin", "demekin"], ["Both", "Ryukin", "Demekin"], "kind", func(): _spawn())
 	_opt(vb, "Background", ["lilac", "paper", "night", "mint"], ["Lilac", "Paper", "Night", "Mint"], "bg", func(): env.background_color = BGS[settings.bg])
