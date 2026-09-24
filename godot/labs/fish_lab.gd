@@ -104,6 +104,9 @@ func _profile(u: float, kind: String) -> Vector3:
 	if kind == "demekin":
 		bot *= 1.1
 	var hw = 0.02 + 0.23 * pow(sin(PI * clampf(u * 1.03, 0.0, 1.0)), 0.5) * (1.0 - 0.5 * u)
+	if kind == "ryukin":
+		# deep, narrow body (laterally compressed) with a tapered snout
+		hw *= 0.86 - 0.18 * smoothstep(0.22, 0.0, u)
 	var pin = smoothstep(0.78, 1.0, u)
 	top = lerpf(top, 0.05, pin)
 	bot = lerpf(bot, -0.04, pin)
@@ -128,6 +131,10 @@ func _body_mesh(kind: String) -> ArrayMesh:
 			var ry = (p.x - p.y) * 0.5
 			var y = cy + ry * signf(c) * pow(absf(c), 0.85)
 			var z = p.z * signf(s) * pow(absf(s), 0.8)
+			if kind == "ryukin":
+				# dorsal ridge: the upper section narrows into the hump, so the
+				# fish reads as a tall teardrop head-on, not an egg
+				z *= lerpf(1.0, 0.58, pow(maxf(c, 0.0), 1.4) * smoothstep(0.05, 0.3, u))
 			st.set_uv(Vector2(u, float(j) / C))
 			st.add_vertex(Vector3(x, y, z))
 	for i in R:
@@ -217,14 +224,15 @@ func _build_fish(kind: String) -> Node3D:
 	# Tall dorsal fin on the hump.
 	var dm = _fin_mesh(0.45 * settings.tail, 0.3, 0.24, 12, 14, 0.12, 0.0, true, 0.0, 0.16, 0.0, 0.35, 4.2)
 	_add_fin(root, dm, _fin_mat(kind, -0.05, 0.4, Vector3(0, 0, 1), 0.8), Vector3(0.02, 0.36 if kind == "ryukin" else 0.26, 0), Vector3(0, 0, -28))
-	# Paired pectorals and pelvics, anal pair.
+	# Paired pectorals and pelvics, anal pair: real fan fins with rounded,
+	# scalloped edges that cup and hang, not slivers.
 	for side in [-1.0, 1.0]:
-		var pm = _fin_mesh(0.22, 0.06, 0.14, 8, 5, side * 0.1, 0.05, false)
-		_add_fin(root, pm, _fin_mat(kind, 0.12, side * 2.0, Vector3(0, 1, 0), 0.7), Vector3(0.14, -0.1, side * 0.16), Vector3(0, side * 30.0, 0))
-		var vm = _fin_mesh(0.26, 0.05, 0.16, 8, 5, side * 0.08, 0.12, false)
-		_add_fin(root, vm, _fin_mat(kind, -0.08, side * 2.6, Vector3(0, 1, 0), 0.7), Vector3(-0.06, -0.24, side * 0.08), Vector3(side * 25.0, side * 15.0, 0))
-		var am = _fin_mesh(0.3 * settings.tail, 0.05, 0.18, 8, 5, side * 0.06, 0.15, false)
-		_add_fin(root, am, _fin_mat(kind, -0.4, side * 3.1, Vector3(0, 1, 0), 0.7), Vector3(-0.4, -0.18, side * 0.04), Vector3(side * 30.0, 0, 0))
+		var pm = _fin_mesh(0.3, 0.07, 0.24, 10, 10, side * 0.1, 0.07, false, 0.25, 0.12, 0.0, 0.0, 2.0 + side)
+		_add_fin(root, pm, _fin_mat(kind, 0.12, side * 2.0, Vector3(0, 1, 0), 0.72), Vector3(0.14, -0.1, side * 0.15), Vector3(side * 12.0, side * 38.0, 0))
+		var vm = _fin_mesh(0.34, 0.06, 0.24, 10, 10, side * 0.08, 0.14, false, 0.25, 0.14, 0.0, 0.0, 3.1 + side)
+		_add_fin(root, vm, _fin_mat(kind, -0.08, side * 2.6, Vector3(0, 1, 0), 0.72), Vector3(-0.06, -0.24, side * 0.07), Vector3(side * 32.0, side * 18.0, 0))
+		var am = _fin_mesh(0.42 * settings.tail, 0.06, 0.3, 12, 12, side * 0.06, 0.2, false, 0.22, 0.18, 0.0, 0.0, 4.7 + side)
+		_add_fin(root, am, _fin_mat(kind, -0.4, side * 3.1, Vector3(0, 1, 0), 0.72), Vector3(-0.4, -0.18, side * 0.04), Vector3(side * 34.0, 0, 0))
 	# Eyes: socket rim of body tissue, gold iris disc with a black pupil, and
 	# a clear glossy lens dome on top (real goldfish eyes are lens + iris).
 	for side in [-1.0, 1.0]:
