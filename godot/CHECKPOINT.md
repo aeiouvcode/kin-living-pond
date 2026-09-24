@@ -1,5 +1,15 @@
 # Checkpoint
 
+- 2026-09-24 10:50 IST, cycle 10: fish spacing and ryukin shape.
+  - Separation now checks head, mid-body and rear body on both fish (3x3 pairs), with a radius from body widths plus a share of length and a firmer positional push. At desktop scale the fish no longer slide over each other's backs (checked across 300 render frames and the web frames).
+  - Ryukin slimmer with a longer veil (len 108, w 55, tail 215), closer to the reference frame.
+  - Web QA: phone boot 4.3 s, desktop 4.1 s, 10 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK.
+- Still worse than reference, in order:
+  1. Demekin outline is smooth; his is visibly ruffled.
+  2. When the ryukin swims deep it fades and blurs a lot; his fish stay crisp.
+  3. Phone: the bowl is cut off at the sides.
+  4. Sakura in his bowl are bigger, denser and more layered.
+
 - 2026-09-24 09:55 IST, cycle 9: veils.
   - Demekin veil: the hard dark wedge is gone. Trailing edge is now ragged in soft lobes (higher-frequency noise, deeper cut), side edges fade, and the veil stays dark and near-opaque like the reference's black veil.
   - Both veils: each strand also ripples on its own phase, so the veil flutters in layers instead of moving as one flat sheet.

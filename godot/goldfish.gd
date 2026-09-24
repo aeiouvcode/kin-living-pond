@@ -167,15 +167,23 @@ func update(dt: float, pond, fishes: Array) -> void:
 			continue
 		# Compare against the other fish's mid-body, not just its head, and add a
 		# gentle positional nudge so the two never swim through each other.
-		var om: Vector2 = o.spine[N / 2] if o.spine.size() == N else o.pos
-		for q in [o.pos, om]:
-			var dv: Vector2 = pos - q
-			var dd = dv.length()
-			var r2 = (length + o.length) * 0.6
-			if dd < r2 and dd > 0.01:
-				var push = 1.0 - dd / r2
-				desire += dv / dd * push * 3.0
-				pos += dv / dd * push * push * 30.0 * dt
+		# Check head, mid-body and rear body on both fish: at desktop scale the
+		# bodies are long, and head-only checks let one fish slide over the
+		# other's back.
+		if o.spine.size() != N or spine.size() != N:
+			continue
+		var mine = [pos, spine[N / 2], spine[N - 3]]
+		var theirs = [o.pos, o.spine[N / 2], o.spine[N - 3]]
+		var r2 = (width + o.width) * 0.62 + (length + o.length) * 0.12
+		for mi in 3:
+			for q in theirs:
+				var dv: Vector2 = mine[mi] - q
+				var dd = dv.length()
+				if dd < r2 and dd > 0.01:
+					var push = 1.0 - dd / r2
+					var wgt = 1.0 if mi == 0 else 0.6
+					desire += dv / dd * push * 3.0 * wgt
+					pos += dv / dd * push * 70.0 * dt * wgt
 	var want_h = desire.angle() if desire.length() > 0.01 else heading
 	var dh = wrapf(want_h - heading, -PI, PI)
 	var mt = turn_rate * dt
