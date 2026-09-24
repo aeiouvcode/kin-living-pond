@@ -11,7 +11,7 @@ var W = 96
 var H = 208
 const DAMP = 0.985
 
-var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0}
+var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0, "crisp": 1.0, "density": 0.55}
 var cur := PackedFloat32Array()
 var prev := PackedFloat32Array()
 var img: Image
@@ -59,6 +59,8 @@ func _ready() -> void:
 	mat.set_shader_parameter("warm", settings.warm)
 	mat.set_shader_parameter("bloom", settings.bloom)
 	mat.set_shader_parameter("refl", settings.refl)
+	mat.set_shader_parameter("crisp", settings.crisp)
+	mat.set_shader_parameter("density", settings.density)
 	mat.set_shader_parameter("caus_tex", caus_vp.get_texture())
 	rect.material = mat
 	layer.add_child(rect)
