@@ -2,7 +2,7 @@
 
 Naksh's call (Sep 24, 7:27 AM): build BOTH the koi pond and the glass bowl. root.gd hosts either one, with a chip (top right) to switch; the choice is saved locally.
 
-Cycle 6 focus: fish craft in the bowl (round peach ryukin, rounded demekin head, soft fin edges). Next: demekin veil whip, demekin body/fins, card overlap on phone.
+Cycle 7 done: demekin veil stays a fan (min strand gap), velvety lumps, fuller fins, no pale ripple band. Next: naming card overlap on phone, then a closer desktop framing.
 
 Cycle 3: rebuild KIN in Godot 4.5 (Compatibility / WebGL2) as a RYUKIN-style glass bowl, graded against Hakozaki's RYUKIN launch post (https://x.com/m_hakozaki/status/1767747010718040068). The koi pond build (main.gd / koi.gd) stays in the folder but is no longer the target. The live /godot/ preview and main's index.html (KIN VII) are only replaced with a new owner go.
 

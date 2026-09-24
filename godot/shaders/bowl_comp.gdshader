@@ -48,12 +48,12 @@ void fragment() {
 	}
 	glow /= 11.7;
 	col += max(glow - 0.62, 0.0) * 1.1 * bloom;
-	col = mix(col, glow, 0.12 * bloom);
+	col = mix(col, glow, 0.08 * bloom);
 	// Ripple light.
 	vec3 n = normalize(vec3(-grad * 16.0, 1.0));
 	vec3 L = normalize(vec3(0.45, -0.7, 0.55));
 	float spec = pow(max(dot(n, normalize(L + vec3(0, 0, 1))), 0.0), 60.0);
-	col += vec3(1.0) * spec * 0.35;
+	col += vec3(1.0) * spec * 0.18;
 	col += vec3(0.06, 0.06, 0.08) * clamp(-(hx + hy) * 20.0, -1.0, 1.0);
 	// Glass rim with a rainbow refraction glint at the upper right.
 	vec2 px = uv * res;

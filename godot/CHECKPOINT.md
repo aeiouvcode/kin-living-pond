@@ -1,5 +1,16 @@
 # Checkpoint
 
+- 2026-09-24 08:12 IST, cycle 7: demekin craft.
+  - Veil: minimum strand gap grows toward the tip (demekin 0.05*w, ryukin 0.035*w) and the push is re-centred, so the veil stays a fan on hard turns instead of folding into a dark whip.
+  - Demekin body: subtle velvety lumps along the mid-body, slightly fuller tail end; wider, longer pectorals (0.25*w, 0.09*len); fuller dorsal (0.11*w).
+  - Found the pale band across the demekin's back: water-surface ripple highlight plus bloom haze in bowl_comp. Ripple specular 0.35 -> 0.18, bloom mix 0.12 -> 0.08. Black fish now stays velvet black.
+  - Web QA: phone boot 5.6 s, desktop 4.1 s, 14 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK.
+- Still worse than reference, in order:
+  1. Naming card covers the bottom of the bowl on phone; fish swim under it (ryukin hidden behind it in some desktop frames too).
+  2. Desktop bowl sits small in the frame; the reference is a close macro.
+  3. Veils are one sheet; his flutter in layers.
+  4. Demekin lumps are subtle; his has a visible velvet texture and a bigger dorsal.
+
 - 2026-09-24 07:55 IST, cycle 6: fish craft pass on the bowl.
   - Ryukin: rounder egg body (pow 0.6, 0.62 head), peach body with less white specular, len 104 / w 62 / tail 185, wider veil fan.
   - Veil: strand ordering pass so strands never cross; fins fade fully to their side edges (no hard polygon edge).

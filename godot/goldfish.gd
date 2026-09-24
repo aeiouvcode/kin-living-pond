@@ -267,16 +267,27 @@ func _update_fins(dt: float) -> void:
 		m /= float(S)
 		mp /= float(S)
 		var lat = (m - mp).normalized().orthogonal()
-		var minsep = width * 0.03 * (1.0 + float(i) * 0.3)
+		# Minimum gap grows toward the tip so the veil can never collapse into
+		# a single dark whip on a hard turn; the push is re-centred afterwards
+		# so the veil does not drift to one side.
+		var minsep = width * (0.05 if kind == 1 else 0.035) * (1.0 + float(i) * 0.35)
 		var prev_p = -INF
+		var shift = PackedFloat32Array()
+		shift.resize(S)
+		for s in S:
+			var pj = (strands[s][i] - m).dot(lat)
+			if pj < prev_p + minsep:
+				shift[s] = prev_p + minsep - pj
+				pj = prev_p + minsep
+			prev_p = pj
+		var avg = 0.0
+		for s in S:
+			avg += shift[s]
+		avg /= float(S)
 		for s in S:
 			var st: PackedVector2Array = strands[s]
-			var pj = (st[i] - m).dot(lat)
-			if pj < prev_p + minsep:
-				st[i] += lat * (prev_p + minsep - pj)
-				pj = prev_p + minsep
-				strands[s] = st
-			prev_p = pj
+			st[i] += lat * (shift[s] - avg)
+			strands[s] = st
 	var fwd = Vector2.from_angle(heading)
 	for sd in 2:
 		var sgn = -1.0 if sd == 0 else 1.0
@@ -285,7 +296,7 @@ func _update_fins(dt: float) -> void:
 		var t2 = (spine[3] - spine[4]).normalized()
 		pts2[0] = spine[3] + t2.orthogonal() * sgn * width * 0.42
 		var pd = (t2.orthogonal() * sgn * 0.8 - t2).normalized().rotated(sgn * sin(phase * 1.3) * 0.35)
-		var pseg = length * 0.07
+		var pseg = length * (0.09 if kind == 1 else 0.07)
 		for i in range(1, 5):
 			var cur2 = pts2[i]
 			var vel2 = (cur2 - prv2[i]) * 0.85
@@ -302,7 +313,8 @@ func _w(u: float) -> float:
 	var s = sin(PI * clampf(u * 0.92 + 0.04, 0.0, 1.0))
 	if kind == 1:
 		var head1 = pow(clampf(u / 0.1, 0.0, 1.0), 0.4)
-		return width * 0.5 * pow(s, 0.45) * (0.7 + 0.3 * head1) * (1.0 - 0.7 * smoothstep(0.45, 1.0, u))
+		var lump = 1.0 + 0.045 * sin(u * 21.0) * smoothstep(0.1, 0.3, u) * (1.0 - smoothstep(0.6, 0.8, u))
+		return width * 0.5 * pow(s, 0.45) * (0.7 + 0.3 * head1) * (1.0 - 0.62 * smoothstep(0.45, 1.0, u)) * lump
 	var head = pow(clampf(u / 0.18, 0.0, 1.0), 0.5)
 	return width * 0.5 * pow(s, 0.6) * (0.62 + 0.38 * head) * (1.0 - 0.45 * smoothstep(0.55, 1.0, u))
 
@@ -349,7 +361,7 @@ func build_mesh() -> void:
 		var pb = pts.size()
 		for i in 5:
 			var dd = (pc[mini(i + 1, 4)] - pc[maxi(i - 1, 0)]).normalized().orthogonal()
-			var hw = width * 0.17 * sin(PI * (0.15 + 0.85 * float(i) / 4.0))
+			var hw = width * (0.25 if kind == 1 else 0.17) * sin(PI * (0.15 + 0.85 * float(i) / 4.0))
 			pts.append(c0 + (pc[i] - c0) * sc + dd * hw)
 			pts.append(c0 + (pc[i] - c0) * sc - dd * hw)
 			uvs.append(Vector2(float(i) / 4.0, 0.0))
@@ -397,7 +409,7 @@ func build_mesh() -> void:
 		var u3 = float(i - 3) / 9.0
 		var n3 = tn[i].orthogonal()
 		var fl = sin(phase * 1.2 - u3 * 3.0) * width * 0.12 * u3
-		var hw3 = width * 0.07 * sin(PI * u3) + 0.6
+		var hw3 = width * (0.11 if kind == 1 else 0.07) * sin(PI * u3) + 0.6
 		pts.append(sp[i] + n3 * (hw3 + fl))
 		pts.append(sp[i] - n3 * (hw3 - fl))
 		uvs.append(Vector2(u3, 0.0))
