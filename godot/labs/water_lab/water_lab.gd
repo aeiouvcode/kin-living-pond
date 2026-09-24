@@ -27,6 +27,8 @@ var mat: ShaderMaterial
 var caus_mats = []
 var surf_mat: ShaderMaterial
 var caus_vp: SubViewport
+var caus_every := 1 # redraw the light net every Nth frame (pond quality fallback)
+var frame_i := 0
 var t := 0.0
 var drop_acc := 0.0
 var rng := RandomNumberGenerator.new()
@@ -42,6 +44,10 @@ func _ready() -> void:
 	# square sim cells in screen space: ~20k cells, long axis follows the viewport
 	var vsz = get_viewport().get_visible_rect().size
 	var cells = 20000.0
+	# in the pond on a wide screen, keep cells nearer phone size in pixels so
+	# rings and the light net stay fine (the fish are framed by height there)
+	if has_meta("embedded") and vsz.x > vsz.y:
+		cells = clampf(vsz.x * vsz.y / 30.0, 20000.0, 40000.0)
 	W = int(round(sqrt(cells * vsz.x / vsz.y)))
 	H = int(round(cells / W))
 	cur.resize(W * H)
@@ -251,6 +257,9 @@ func _process(delta: float) -> void:
 		_step()
 		img.set_data(W, H, false, Image.FORMAT_RF, cur.to_byte_array())
 		tex.update(img)
+	frame_i += 1
+	if caus_every > 1 and caus_vp:
+		caus_vp.render_target_update_mode = SubViewport.UPDATE_ONCE if frame_i % caus_every == 0 else SubViewport.UPDATE_DISABLED
 	mat.set_shader_parameter("time", t)
 	for m in caus_mats:
 		m.set_shader_parameter("time", t)
@@ -263,6 +272,10 @@ func _input(e: InputEvent) -> void:
 	if e is InputEventScreenTouch or e is InputEventMouseButton:
 		dragging = e.pressed
 		if e.pressed:
-			_drop(e.position / vs, 0.6, 3.0)
+			# in the pond a tap is a pellet plop, not a stone: smaller, softer ring
+			if has_meta("embedded"):
+				_drop(e.position / vs, 0.28, 2.2)
+			else:
+				_drop(e.position / vs, 0.6, 3.0)
 	elif (e is InputEventScreenDrag or e is InputEventMouseMotion) and dragging:
 		_drop(e.position / vs, 0.35, 2.6)
