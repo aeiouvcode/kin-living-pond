@@ -1,5 +1,16 @@
 # Checkpoint
 
+- 2026-09-24 20:52 IST, cycle 21: fish turn - veil pleats, rim-only fresnel, velvet demekin, bigger eyes. Tested solo (debug stage + model_test.sh contact sheets, before = c19 sheets).
+  - Veils: vertex fold along the fin rays (pleats), the far side of each fold shades darker; fresnel is limited to a thin rim band so fins glow at the edge instead of washing out the whole sheet (Alpha Fresnel / Rim Glow sliders drive it).
+  - Demekin body: matte velvet with a blue-violet grazing sheen instead of glossy black; copper iris now shows.
+  - Eyes: bigger on both (ryukin radius 0.056), readable at phone size on the debug stage.
+- Still worse, per model:
+  1. Veils are still single sheets: no darker layering where lobes overlap; ryukin pleats read only up close.
+  2. No fish defocus (only the grid blurs).
+  3. Ryukin head-on is still egg-shaped; the hump reads from the side only.
+  4. Pectoral/pelvic fins are still slivers.
+  5. Settings panel style and style modes (pixel/low-poly/wireframe) still open.
+
 - 2026-09-24 19:57 IST, cycle 20: fluid turn - zipper hunt, surface reflection, bloom.
   - Zipper: diagnosed with isolation renders (--wind=0 removes it, turning off reflection/bloom/glints does not), so it came from ray folds in the swell caustics, not the ripple sim. Fixes kept: cubic B-spline sampling of the sim heights (smooth slopes), 1.5-cell gradients, lower caustic focus (0.92) so fewer rays fold, wider 4-tap soften. Tried and dropped: an HDR caustics target (kept fold spikes -> speckle) and a full-res target (hatching at folds). 2D MSAA is not supported in GLES3.
   - Surface reflection: reflected-ray lookup of a warm sky with a blossom-pink canopy along one side, so a pink wash with a wobbling edge lies over the left of the pool (`--refl=0..1`).
