@@ -158,10 +158,19 @@ func update(dt: float, pond, fishes: Array) -> void:
 		desire = desire.normalized()
 	var sd = pond.cpu_sdf(pos)
 	var inward = (pond.center - pos).normalized()
-	var ew = clampf((sd + 70.0) / 60.0, 0.0, 1.0)
+	# Wall margins scale with the fish: on desktop the fish are ~2x bigger and
+	# fixed-pixel margins let the veil trail out past the glass, where the rim
+	# fade turned it into a grey smear (c12 desktop frame).
+	var ms = maxf(1.0, (length + tail_len * 0.5) / 180.0)
+	var ew = clampf((sd + 70.0 * ms) / (60.0 * ms), 0.0, 1.0)
 	desire = desire * (1.0 - ew) + inward * ew * 1.6
-	if pond.cpu_sdf(pos + Vector2.from_angle(heading) * 60.0) > -30.0:
+	if pond.cpu_sdf(pos + Vector2.from_angle(heading) * 60.0 * ms) > -30.0 * ms:
 		desire += inward
+	# The veil trails behind: if its tip is near the glass, steer inward too.
+	if spine.size() == N:
+		var tipp = spine[N - 1] + (spine[N - 1] - spine[N - 2]).normalized() * tail_len * 0.5
+		if pond.cpu_sdf(tipp) > -10.0 * ms:
+			desire += inward * 0.8
 	var yield_k = 1.0
 	for o in fishes:
 		if o == self:

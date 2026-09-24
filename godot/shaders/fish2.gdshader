@@ -76,8 +76,17 @@ void fragment() {
 			col = mix(vec3(1.0, 0.9, 0.88), vec3(1.0, 0.99, 1.0), smoothstep(0.0, 0.3, uv.x)) * silk;
 			a = COLOR.g * tip * root * (0.06 + 0.94 * side) * mix(1.1, 0.7, uv.x);
 		} else {
-			col = mix(vec3(0.03, 0.03, 0.05), vec3(0.09, 0.1, 0.2), smoothstep(0.2, 1.0, uv.x)) * silk;
-			a = clamp(COLOR.g * tip * root * (0.1 + 0.9 * side) * mix(1.25, 0.8, uv.x), 0.0, 0.9);
+			// Inky black veil like his: near-opaque through the body of the
+			// fin, with the softness only in the ragged last stretch, and a
+			// faint blue sheen instead of fading to grey.
+			// Ragged, feathered side edges so the opaque veil never shows the
+			// mesh outline as a straight wedge.
+			float rs = 0.07 * vn(vec2(uv.x * 11.0, seed + 5.0)) + 0.04 * vn(vec2(uv.x * 29.0, seed + 9.0));
+			float sideb = smoothstep(rs, rs + sw * 0.8, uv.y) * smoothstep(1.0 - rs, 1.0 - rs - sw * 0.8, uv.y);
+			float tipb = smoothstep(1.0, rag + (1.0 - rag) * 0.35, uv.x);
+			col = mix(vec3(0.025, 0.025, 0.04), vec3(0.05, 0.06, 0.13), smoothstep(0.3, 1.0, uv.x)) * silk;
+			col += vec3(0.08, 0.1, 0.22) * (sin(uv.y * 26.0 + uv.x * 4.0 + seed) * 0.5 + 0.5) * 0.25 * smoothstep(0.1, 0.6, uv.x);
+			a = clamp(COLOR.g * tipb * root * sideb * 1.55, 0.0, 0.95);
 		}
 	} else {
 		vec4 ee = eye(uv * 2.0 - 1.0, kind);

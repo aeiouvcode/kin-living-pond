@@ -1,5 +1,15 @@
 # Checkpoint
 
+- 2026-09-24 14:00 IST, cycle 13: black veil.
+  - Cause of the desktop grey smear: the demekin veil was semi-transparent over most of its area, and on desktop (fish ~2x bigger) the tail trailed past the glass where the rim fade thinned it further. Fixes: veil is now near-opaque ink through its body with a faint blue sheen, softness only in the ragged last stretch and on noise-feathered side edges (a first opaque try showed a hard wedge outline; feathering removed it). Wall-avoidance margins now scale with fish size, and the fish also steers inward when its veil tip nears the glass.
+  - Checked desktop 1280x800 render frames (crops of the demekin over ~10 s) and the web frames on phone and desktop: veil reads black and full, no grey smear.
+  - Web QA: phone boot 4.5 s, desktop 4.5 s, 10 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK. Pack 140 KB.
+- Still worse than reference, in order:
+  1. Demekin ruffle is subtle at phone size.
+  2. His petals sit in clear depth layers with a few big soft ones in front; ours are more evenly spread.
+  3. A faint straight line still shows along the demekin veil's root edge at some angles.
+  4. Boot splash flashes lilac before the pond.
+
 - 2026-09-24 13:00 IST, cycle 12: fish gap, sakura, caustics.
   - Fish separation now measures the closest pair across both whole bodies, including two points down each veil, and keeps a visible gap (half-widths + margin). A 1.2 s look-ahead makes a fish sidestep when their paths would cross, and the one behind slows to give way. Tap targets are offset per fish so both no longer aim at the same pixel. 14 phone render frames over 20 s: no touches (c11 build touched in 2 of the same 14 frames).
   - Sakura: 44 base (was 24), 12-21 px base size (was 9-15), 62% whole flowers (was 30%). Foreground blurred petals are single petals at 0.36 alpha; the big foreground flowers were washing the black fish grey.
