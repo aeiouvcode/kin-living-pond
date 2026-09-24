@@ -3,6 +3,10 @@ render_mode cull_disabled, blend_mix, depth_draw_opaque, diffuse_burley, specula
 // Thin double-sided veil: rays, edges fading to clear, light passing
 // through, a faint prismatic edge glint. UV.x root->tip, UV.y across.
 uniform float kind = 0.0;
+// pond only: the water lab's light net, sampled in screen space so the same
+// dappled light that crosses the floor also slides over the fish
+uniform sampler2D caus_tex : source_color, filter_linear, repeat_disable;
+uniform float caus_amt = 0.0;
 uniform float time_s = 0.0;
 uniform float swim = 1.0;
 uniform float bend = 0.0;
@@ -71,4 +75,9 @@ void fragment() {
 	SPECULAR = 0.3;
 	BACKLIGHT = kind < 0.5 ? vec3(0.9, 0.8, 0.78) : vec3(0.1, 0.12, 0.25);
 	EMISSION = vec3(1.0, 0.9, 0.85) * fr * alpha_fresnel * rim_band * 0.25 * (kind < 0.5 ? 1.0 : 0.4) + (hue(u * 1.5 + v * 0.7 + fr) * fr * 0.12 * edge + (kind > 0.5 ? vec3(0.2, 0.26, 0.55) * fr * 0.4 : vec3(0.0))) * rim_glow;
+	if (caus_amt > 0.0) {
+		vec3 cl = texture(caus_tex, SCREEN_UV + NORMAL.xy * 0.01).rgb;
+		float up = clamp(NORMAL.z, 0.0, 1.0);
+		EMISSION += (ALBEDO * 0.7 + 0.3) * max(cl - 0.08, vec3(0.0)) * 1.6 * caus_amt * up;
+	}
 }
