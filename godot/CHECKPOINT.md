@@ -1,5 +1,18 @@
 # Checkpoint
 
+- 2026-09-24 16:50 IST, cycle 15: fish lab v2.
+  - Butterfly double tail: two broad forked fans that stand near-vertical at the root and splay outward (58 deg), cupped across their width, with a centre fork and rounded lobe tips. From above it now reads as two lobes, not one fan.
+  - Demekin telescope eyes are smooth domes of body tissue with the eye on the outer face (the cylinder "headphones" are gone).
+  - Gill plate crease behind the eye and a small mouth on both fish.
+  - Showcase settings panel (Hakozaki-style, collapsed by default behind a Settings button): camera Orbit/Top/Side, fish Both/Ryukin/Demekin, background Lilac/Paper/Night/Mint, field of view, tail length, fin opacity, brightness, saturation, contrast. All also settable from launch args.
+  - Viewport wireframe was tried for a wireframe style mode: it does nothing in the Compatibility renderer, so that control was removed; style modes need their own shader path.
+- Still worse than the reference / real fancy goldfish, in order:
+  1. The fish are small in the frame and the head reads cartoonish: eyes are flat black dots with a ring; real goldfish eyes sit in a socket with a glossy lens and a gold iris.
+  2. Veils are still flat-ish sheets with even transparency; real veils fold along rays and pile up in darker overlapping layers.
+  3. Body silhouette is a clean egg; the ryukin needs a sharper shoulder hump and a tapering belly line, and a lateral line/scale shimmer.
+  4. Demekin iris ring sits on the dome like a sticker.
+  5. Settings panel uses default grey dropdowns; needs KIN styling. Style modes (pixel, low-poly, wireframe) not built.
+
 - 2026-09-24 15:50 IST, cycle 14: fish lab v1 (workstream split).
   - New 3D fish lab (Compatibility renderer): procedural lofted body from nose to caudal peduncle with egg-shaped, superelliptic sections, a high back behind the head (ryukin hump) and a narrow peduncle; soft-sheen body shader (faint scale lattice only in the sheen, peach/red patches on the ryukin, velvet black with a cool rim light on the demekin); double tail as four drooping sheets, tall dorsal, paired pectoral/pelvic/anal fins; thin double-sided fin shader (rays, edges fading to clear, back-light, faint prismatic edge glint); one spine wave drives body and fins, with fins lagging and rippling like cloth. Eyes with iris rings; demekin telescope eyes on stalks. Cameras: 3/4 orbit, top, side.
   - Workspace reset twice this afternoon and uncommitted work was lost once; the push tool now lives in the repo (godot/tools/mkpush.py) and work is committed as soon as it renders.

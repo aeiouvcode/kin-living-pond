@@ -1,7 +1,7 @@
 # Current task
 
 TWO WORKSTREAMS (Naksh, Sep 24 2:36-2:40 PM): fish design and fluid are built separately and integrated later, the way Hakozaki works. The fish needs a realistic 3D redesign to compete with RYUKIN, and the project should be showcased with a variety of settings (camera modes + FOV, quality, effect toggles, colour grading, fish count/size, tank/background, style modes like pixel/low-poly/wireframe driven by one motion rig).
-- Fish lab: godot/labs/fish_lab.gd (+ fish_body/fish_fin shaders). Run: `godot --path godot -- --lab=fish --cam=34|top|side --kind=both|ryukin|demekin --tail=1 --fin=0.8 --fov=34`.
+- Fish lab: godot/labs/fish_lab.gd (+ fish_body/fish_fin shaders). Run: `godot --path godot -- --lab=fish --cam=34|top|side --kind=both|ryukin|demekin --tail=1 --fin=0.8 --fov=34 --bg=lilac|paper|night|mint --panel=1 --bright= --sat= --contrast=`. In-app Settings button opens the same knobs.
 - Fluid lab: godot/labs/water_lab (next).
 - Bowl/pond scenes stay as they are until both labs are strong. Nothing live without a new go.
 

@@ -49,6 +49,13 @@ void fragment() {
 		rough = 0.5 - scale * 0.04;
 		spec = 0.45;
 	}
+	// Gill plate: a soft crease arc behind the eye, and a small mouth.
+	float gx = 0.2 + 0.035 * cos((uv.y - 0.5) * 6.2832);
+	float gill = exp(-pow((uv.x - gx) / 0.012, 2.0)) * smoothstep(0.02, 0.15, abs(uv.y - 0.25)) * smoothstep(0.02, 0.15, abs(uv.y - 0.75));
+	col *= 1.0 - gill * (kind < 0.5 ? 0.22 : 0.4);
+	col = mix(col, col * 1.08 + 0.02, smoothstep(gx, gx - 0.08, uv.x) * 0.3);
+	float mouth = smoothstep(0.035, 0.0, uv.x) * smoothstep(0.2, 0.0, abs(uv.y - 0.5));
+	col = mix(col, vec3(0.45, 0.2, 0.2) * (kind < 0.5 ? 1.0 : 0.1), mouth * 0.7);
 	ALBEDO = col;
 	ROUGHNESS = rough;
 	SPECULAR = spec;

@@ -11,6 +11,7 @@ uniform float phase = 0.0;
 uniform float flutter = 1.0;
 uniform float opacity = 0.8;
 uniform float root_x = 0.0;
+uniform float fork = 0.0;
 uniform vec3 wave_axis = vec3(0.0, 0.0, 1.0);
 
 float h21(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
@@ -37,7 +38,9 @@ void fragment() {
 	float u = UV.x;
 	float v = UV.y;
 	float rays = 0.9 + 0.1 * smoothstep(0.3, 0.9, abs(sin(v * 38.0 + vn(vec2(v * 6.0, u * 2.0)) * 2.0)));
-	float rag = 0.86 + 0.1 * vn(vec2(v * 14.0, phase * 3.0));
+	float rag = 0.86 + 0.1 * vn(vec2(v * 14.0, phase * 3.0)) - fork * exp(-pow((v - 0.5) / 0.14, 2.0));
+	// rounded lobe tips
+	rag -= 0.12 * pow(abs(v - 0.5) * 2.0, 3.0);
 	float edge = smoothstep(1.0, rag, u) * smoothstep(0.0, 0.12, v) * smoothstep(1.0, 0.88, v);
 	float a = opacity * edge * mix(1.0, 0.45, u) * rays;
 	vec3 col;
