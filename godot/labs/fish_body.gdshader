@@ -46,9 +46,10 @@ void fragment() {
 		col = mix(col, vec3(1.0, 0.8, 0.76), 0.25 * smoothstep(0.4, 1.0, uv.x));
 		rough = 0.45 - scale * 0.04;
 	} else {
-		col = vec3(0.018, 0.018, 0.026) + vn(uv * vec2(40.0, 30.0)) * 0.012;
-		rough = 0.5 - scale * 0.04;
-		spec = 0.45;
+		// velvet: matte black with a soft blue-violet sheen that grows at grazing angles
+		col = vec3(0.022, 0.02, 0.03) + vn(uv * vec2(40.0, 30.0)) * 0.01;
+		rough = 0.88;
+		spec = 0.12;
 	}
 	// Gill plate: a soft crease arc behind the eye, and a small mouth.
 	float gx = 0.2 + 0.035 * cos((uv.y - 0.5) * 6.2832);
@@ -63,6 +64,7 @@ void fragment() {
 	float fr = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	// Cheap subsurface feel on the pale fish, cool rim light on the black one.
 	vec3 rimc = kind < 0.5 ? vec3(1.0, 0.86, 0.84) : vec3(0.35, 0.45, 0.85);
-	EMISSION = rimc * fr * (kind < 0.5 ? 0.2 : 0.55) * rim_glow;
+	float velvet = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.6);
+	EMISSION = (kind < 0.5 ? rimc * fr * 0.2 : vec3(0.2, 0.21, 0.42) * velvet * 0.8 + rimc * fr * 0.15) * rim_glow;
 	BACKLIGHT = kind < 0.5 ? vec3(0.5, 0.25, 0.2) : vec3(0.0);
 }
