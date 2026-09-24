@@ -1,5 +1,17 @@
 # Checkpoint
 
+- 2026-09-24 18:52 IST, cycle 19: first fixes driven by the solo model tests.
+  - Veils: fin mesh outline is now shaped in geometry, not only by alpha: rounded lobe ends, uneven scallops between rays, a deep centre fork on each caudal fin, and the sheet hangs more toward its tip with a slight edge wave. The tail reads as two forked, drooping lobes in side and top silhouettes (was two hard wedges). Dorsal has a ragged, hanging trailing edge.
+  - Eyes: socket rim of body tissue, gold (ryukin) / copper (demekin) iris disc, big black pupil, clear flattened glossy lens dome on top; faces out and slightly forward.
+  - Ryukin shoulder: head sits lower and the back rises behind the eyes into the hump.
+  - Model-test framing shows the whole fish including veil tips (c18 sheets cropped the tail, so before/after is not pixel-comparable).
+- Still worse, per model:
+  1. Veils are still one sheet each: no folds along the rays and no darker overlapping layers where lobes cross.
+  2. Ryukin head-on is still a smooth egg; hump reads from the side only. Eyes read at 2x crop but are small at phone size.
+  3. Demekin body is glossy black, not velvet; copper iris barely shows.
+  4. Pectoral/pelvic fins are still slivers; fresnel-as-edge-glow and fish defocus still open.
+  5. Settings panel styling and style modes still open.
+
 - 2026-09-24 18:30 IST, cycle 18: solo model tests (Naksh 6:25 PM: Hakozaki "tests every model before using it, separately"; reference post x.com/m_hakozaki/status/2101485567087452339 shows one moon jellyfish on a bare debug grid, orbit camera, live sliders Blur Intensity / Blur Min / Alpha Intensity / Alpha Min / Alpha Fresnel).
   - Debug stage: `-- --lab=fish --stage=debug [--kind=ryukin|demekin]`. One fish, dark debug grid floor, slow low orbit, live dark knob panel: Model, Alpha Intensity, Alpha Min, Alpha Fresnel (fins), Rim Glow (body + fins), Blur Intensity, Blur Min. The Compatibility renderer has no depth of field, so blur is a stand-in: grid lines soften with distance from the focus plane, never below Blur Min. Landscape keeps the vertical view.
   - Model test mode: `--kind=` alone, `--light=studio|back|top|flat`, `--anim=` (0 freezes the rig), `--sil=1` flat silhouette, `--turn=deg`. godot/tools/model_test.sh <kind> <out.png> renders an 8-view contact sheet (side, front, top, 3/4, backlit, side and top silhouettes, flat light).

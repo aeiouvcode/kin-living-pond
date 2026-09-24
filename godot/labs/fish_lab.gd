@@ -95,6 +95,11 @@ func _profile(u: float, kind: String) -> Vector3:
 	var hump = 0.36 if kind == "ryukin" else 0.26
 	var top = 0.02 + hump * pow(sin(PI * clampf(u * 1.05, 0.0, 1.0)), 0.5) * (1.0 - 0.4 * u)
 	top += (0.1 if kind == "ryukin" else 0.03) * exp(-pow((u - 0.33) / 0.16, 2.0))
+	if kind == "ryukin":
+		# ryukin shoulder: head stays low, then the back rises steeply behind
+		# the eyes into a peaked hump and slopes long toward the tail
+		top -= 0.04 * smoothstep(0.22, 0.0, u)
+		top += 0.05 * smoothstep(0.08, 0.32, u) * (1.0 - smoothstep(0.34, 0.85, u))
 	var bot = -(0.02 + 0.27 * pow(sin(PI * clampf(u * 1.02, 0.0, 1.0)), 0.55) * (1.0 - 0.3 * u))
 	if kind == "demekin":
 		bot *= 1.1
@@ -134,7 +139,7 @@ func _body_mesh(kind: String) -> ArrayMesh:
 	st.generate_normals()
 	return st.commit()
 
-func _fin_mesh(len: float, w0: float, w1: float, nu: int, nv: int, spread: float, droop: float, axis_up: bool, cup: float = 0.0) -> ArrayMesh:
+func _fin_mesh(len: float, w0: float, w1: float, nu: int, nv: int, spread: float, droop: float, axis_up: bool, cup: float = 0.0, scallop: float = 0.0, fork: float = 0.0, hang: float = 0.0, seed: float = 0.0) -> ArrayMesh:
 	# A fin sheet from root (u=0) to tip (u=1) along -x, spanning y (axis_up)
 	# or z, fanning from w0 to w1.
 	var st = SurfaceTool.new()
@@ -145,11 +150,19 @@ func _fin_mesh(len: float, w0: float, w1: float, nu: int, nv: int, spread: float
 		for j in nv + 1:
 			var v = float(j) / nv
 			var s = (v - 0.5) * w
-			var x = -u * len
+			# outline: rounded lobe ends, uneven scallops between rays, a
+			# centre fork; the sheet hangs (hang) more toward its tip
+			var vv = 2.0 * v - 1.0
+			var lv = 1.0
+			if scallop > 0.0:
+				lv = 0.62 + 0.38 * sqrt(maxf(0.0, 1.0 - vv * vv * vv * vv))
+				lv *= 1.0 - scallop * (0.5 - 0.5 * cos(v * TAU * 3.5 + seed)) * (0.6 + 0.4 * sin(v * 17.0 + seed * 3.0))
+				lv *= 1.0 - fork * exp(-pow((v - 0.5) / 0.1, 2.0))
+			var x = -u * len * lv
 			var p: Vector3
 			var curl = cup * u * (v - 0.5) * (v - 0.5) * 4.0 * w
 			if axis_up:
-				p = Vector3(x, s + u * spread, curl)
+				p = Vector3(x, s + u * spread - hang * pow(u * lv, 2.0) * len, curl + hang * 0.25 * sin(v * 9.0 + seed) * u * u * len)
 			else:
 				p = Vector3(x, -u * u * droop - curl, s + u * spread)
 			st.set_uv(Vector2(u, v))
@@ -197,12 +210,12 @@ func _build_fish(kind: String) -> Node3D:
 	# from above you see two big lobes; each cups and droops at the edges.
 	var tail_x = -0.62
 	for side in [-1.0, 1.0]:
-		var m = _fin_mesh(tl, 0.1, 1.0, 24, 14, 0.0, 0.0, true, 0.22)
+		var m = _fin_mesh(tl, 0.1, 1.0, 26, 28, 0.0, 0.0, true, 0.22, 0.22, 0.28, 0.28, 1.7 + side)
 		var fm = _fin_mat(kind, tail_x, side * 1.3, Vector3(0, 0, 1), 0.85)
-		fm.set_shader_parameter("fork", 0.3)
+		fm.set_shader_parameter("fork", 0.0) # the fork now lives in the mesh outline
 		_add_fin(root, m, fm, Vector3(tail_x + 0.03, -0.02, side * 0.015), Vector3(side * 58.0, side * 16.0, 0))
 	# Tall dorsal fin on the hump.
-	var dm = _fin_mesh(0.45 * settings.tail, 0.26, 0.2, 10, 6, 0.12, 0.0, true)
+	var dm = _fin_mesh(0.45 * settings.tail, 0.3, 0.24, 12, 14, 0.12, 0.0, true, 0.0, 0.16, 0.0, 0.35, 4.2)
 	_add_fin(root, dm, _fin_mat(kind, -0.05, 0.4, Vector3(0, 0, 1), 0.8), Vector3(0.02, 0.36 if kind == "ryukin" else 0.26, 0), Vector3(0, 0, -28))
 	# Paired pectorals and pelvics, anal pair.
 	for side in [-1.0, 1.0]:
@@ -212,36 +225,67 @@ func _build_fish(kind: String) -> Node3D:
 		_add_fin(root, vm, _fin_mat(kind, -0.08, side * 2.6, Vector3(0, 1, 0), 0.7), Vector3(-0.06, -0.24, side * 0.08), Vector3(side * 25.0, side * 15.0, 0))
 		var am = _fin_mesh(0.3 * settings.tail, 0.05, 0.18, 8, 5, side * 0.06, 0.15, false)
 		_add_fin(root, am, _fin_mat(kind, -0.4, side * 3.1, Vector3(0, 1, 0), 0.7), Vector3(-0.4, -0.18, side * 0.04), Vector3(side * 30.0, 0, 0))
-	# Eyes: glossy domes; the demekin's telescope eyes sit on short stalks.
+	# Eyes: socket rim of body tissue, gold iris disc with a black pupil, and
+	# a clear glossy lens dome on top (real goldfish eyes are lens + iris).
 	for side in [-1.0, 1.0]:
-		var eye = MeshInstance3D.new()
+		var er = 0.046 if kind == "ryukin" else 0.07
+		var ez = 0.118 if kind == "ryukin" else 0.2
+		var ep = Vector3(0.235, 0.06, side * ez)
+		var out = Vector3(0.25, 0.05, side).normalized() # eye faces out and slightly forward
+		var basis = Basis.looking_at(-out, Vector3.UP) # -Z of this basis points outward
+		var socket = MeshInstance3D.new()
+		var tm = TorusMesh.new()
+		tm.inner_radius = er * 0.92
+		tm.outer_radius = er * 1.32
+		socket.mesh = tm
+		var sk = StandardMaterial3D.new()
+		sk.albedo_color = Color(0.93, 0.8, 0.76) if kind == "ryukin" else Color(0.03, 0.03, 0.045)
+		sk.roughness = 0.5
+		socket.material_override = sk
+		socket.transform = Transform3D(basis * Basis(Vector3.RIGHT, PI * 0.5), ep - out * er * 0.1)
+		root.add_child(socket)
+		var iris = MeshInstance3D.new()
+		var cy = CylinderMesh.new()
+		cy.top_radius = er * 0.95
+		cy.bottom_radius = er * 0.95
+		cy.height = er * 0.08
+		iris.mesh = cy
+		var im = StandardMaterial3D.new()
+		im.albedo_color = Color(0.88, 0.7, 0.36) if kind == "ryukin" else Color(0.72, 0.36, 0.12)
+		im.metallic = 0.6
+		im.roughness = 0.35
+		iris.material_override = im
+		iris.transform = Transform3D(basis * Basis(Vector3.RIGHT, PI * 0.5), ep + out * er * 0.05)
+		root.add_child(iris)
+		var pupil = MeshInstance3D.new()
+		var pc = CylinderMesh.new()
+		pc.top_radius = er * 0.64
+		pc.bottom_radius = er * 0.64
+		pc.height = er * 0.1
+		pupil.mesh = pc
+		var pm2 = StandardMaterial3D.new()
+		pm2.albedo_color = Color(0.01, 0.01, 0.02)
+		pm2.roughness = 0.2
+		pupil.material_override = pm2
+		pupil.transform = Transform3D(basis * Basis(Vector3.RIGHT, PI * 0.5), ep + out * er * 0.1)
+		root.add_child(pupil)
+		var lens = MeshInstance3D.new()
 		var sm = SphereMesh.new()
-		var er = 0.042 if kind == "ryukin" else 0.072
 		sm.radius = er
 		sm.height = er * 2.0
-		eye.mesh = sm
-		var em = StandardMaterial3D.new()
-		em.albedo_color = Color(0.02, 0.02, 0.04)
-		em.roughness = 0.05
-		em.metallic_specular = 0.9
-		em.rim_enabled = true
-		em.rim = 0.4
-		eye.material_override = em
-		var ez = 0.12 if kind == "ryukin" else 0.2
-		eye.position = Vector3(0.24, 0.07, side * ez)
-		root.add_child(eye)
-		var iris = MeshInstance3D.new()
-		var tm = TorusMesh.new()
-		tm.inner_radius = er * 0.62
-		tm.outer_radius = er * 0.98
-		iris.mesh = tm
-		var im = StandardMaterial3D.new()
-		im.albedo_color = Color(0.85, 0.72, 0.45) if kind == "ryukin" else Color(0.85, 0.42, 0.15)
-		im.roughness = 0.3
-		iris.material_override = im
-		iris.position = eye.position + Vector3(0, 0, side * er * 0.55)
-		iris.rotation_degrees = Vector3(90, 0, 0)
-		root.add_child(iris)
+		lens.mesh = sm
+		var lm = StandardMaterial3D.new()
+		lm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		lm.albedo_color = Color(0.9, 0.95, 1.0, 0.12)
+		lm.roughness = 0.03
+		lm.metallic_specular = 1.0
+		lm.rim_enabled = true
+		lm.rim = 0.6
+		lens.material_override = lm
+		lens.position = ep
+		lens.scale = Vector3(1, 1, 1) - out.abs() * 0.45 # flattened dome
+		root.add_child(lens)
+		var eye = lens
 		if kind == "demekin":
 			# Telescope eye: a smooth dome of body tissue growing out of the head.
 			var dome = MeshInstance3D.new()
@@ -315,7 +359,9 @@ func _apply_sil() -> void:
 
 func _place_cam() -> void:
 	var target = Vector3(-0.35, 0, 0)
-	var k = 1.0 if settings.kind == "both" else 0.62 # solo model test: fill the frame
+	var k = 1.0 if settings.kind == "both" else 0.9 # solo model test: whole fish incl. veil tips
+	if settings.kind != "both":
+		target = Vector3(-0.75, 0, 0)
 	match settings.cam:
 		"top":
 			cam.position = target + Vector3(0, 4.6 * k, 0.001)
