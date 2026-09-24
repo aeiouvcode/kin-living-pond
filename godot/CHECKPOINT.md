@@ -1,5 +1,16 @@
 # Checkpoint
 
+- 2026-09-24 09:55 IST, cycle 9: veils.
+  - Demekin veil: the hard dark wedge is gone. Trailing edge is now ragged in soft lobes (higher-frequency noise, deeper cut), side edges fade, and the veil stays dark and near-opaque like the reference's black veil.
+  - Both veils: each strand also ripples on its own phase, so the veil flutters in layers instead of moving as one flat sheet.
+  - Checked against a fresh frame of the reference video (3 s): his demekin is solid black with a ruffled outline; ours now matches the tone.
+  - Web QA (fresh workspace, new /tmp/qa.py): phone boot 4.7 s, desktop 2.3 s, 10 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK. Pack is 115 KB (fresh clone; no untracked local files included).
+- Still worse than reference, in order:
+  1. On desktop the two fish can overlap and draw through each other now that they are bigger (B3).
+  2. His ryukin is slimmer with a longer white veil; ours reads rounder and shorter.
+  3. Demekin outline is smooth; his is visibly ruffled.
+  4. Phone: the bowl is cut off at the sides.
+
 - 2026-09-24 08:49 IST, cycle 8: framing.
   - While the naming card is up, its top edge (plus a margin that scales with the bowl) acts as a soft wall and new swim targets are picked above it, so both fish stay in view on phone instead of hiding under the card.
   - Landscape frames the bowl closer (radius x1.12): the rim runs just past the top and bottom edges and the fish scale up with it, nearer the reference's macro shot.

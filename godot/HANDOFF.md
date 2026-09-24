@@ -5,3 +5,4 @@ Render frames: `xvfb-run -a godot --rendering-driver opengl3 --write-movie /tmp/
 Web build: ./build.sh, then QA CSP, phone and desktop frames on the export.
 Deploy: only with owner go; the live /godot/ on main is cycle 2.
 Next: fix the CHECKPOINT open list in order, rebuild web export, QA, send side-by-side audit. Branch pushes are allowed (hold lifted Sep 24); main and live /godot/ still need a new owner go.
+Fresh workspace setup: clone branch godot-prototype; download Godot_v4.5.2-stable_linux.x86_64.zip and the export templates .tpz from github.com/godotengine/godot-builds releases (4.5.2-stable); unzip templates/web* into ~/.local/share/godot/export_templates/4.5.2.stable/; run `godot --headless --import` once in /godot; pip install playwright and `playwright install chromium` for browser QA.

@@ -228,7 +228,8 @@ func _update_fins(dt: float) -> void:
 			var cur = pts[i]
 			var vel = (cur - prv[i]) * 0.86
 			prv[i] = cur
-			var dir = dir0.rotated(sin(phase * 0.8 - f * 3.2) * 0.22 * f)
+			# Each strand also ripples on its own phase so the veil flutters in layers.
+			var dir = dir0.rotated(sin(phase * 0.8 - f * 3.2) * 0.22 * f + sin(phase * 1.7 + float(s) * 1.3 - f * 4.0) * 0.1 * f)
 			var tgt = pts[i - 1] + dir * tseg
 			cur += vel + (tgt - cur) * (0.32 * (1.0 - f) + 0.06) * k
 			pts[i] = cur

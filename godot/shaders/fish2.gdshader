@@ -63,7 +63,7 @@ void fragment() {
 		float sw = 0.22 + 0.25 * (1.0 - smoothstep(0.0, 0.4, uv.x));
 		float side = smoothstep(0.0, sw, uv.y) * smoothstep(1.0, 1.0 - sw, uv.y);
 		// Ragged, soft trailing edge so the veil never reads as a polygon.
-		float rag = 0.72 + 0.22 * vn(vec2(uv.y * 9.0, seed));
+		float rag = kind < 0.5 ? 0.72 + 0.22 * vn(vec2(uv.y * 9.0, seed)) : 0.5 + 0.42 * vn(vec2(uv.y * 16.0, seed + 3.0));
 		float tip = smoothstep(1.0, rag, uv.x) * (1.0 - uv.x * 0.35);
 		float root = 1.0 + 0.25 * smoothstep(0.3, 0.0, uv.x);
 		float silk = 0.94 + 0.06 * sin(uv.y * 30.0 + vn(uv * vec2(2.0, 8.0) + seed) * 4.0);
@@ -72,7 +72,7 @@ void fragment() {
 			a = COLOR.g * tip * root * (0.06 + 0.94 * side) * mix(1.1, 0.7, uv.x);
 		} else {
 			col = mix(vec3(0.03, 0.03, 0.05), vec3(0.09, 0.1, 0.2), smoothstep(0.2, 1.0, uv.x)) * silk;
-			a = clamp(COLOR.g * tip * root * (0.05 + 0.95 * side) * mix(1.15, 0.6, uv.x), 0.0, 0.85);
+			a = clamp(COLOR.g * tip * root * (0.1 + 0.9 * side) * mix(1.25, 0.8, uv.x), 0.0, 0.9);
 		}
 	} else {
 		vec4 ee = eye(uv * 2.0 - 1.0, kind);
