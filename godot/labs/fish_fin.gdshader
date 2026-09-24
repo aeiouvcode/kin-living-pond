@@ -13,6 +13,7 @@ uniform float opacity = 0.8;
 uniform float alpha_min = 0.0;
 uniform float alpha_fresnel = 0.0;
 uniform float rim_glow = 1.0;
+uniform float pleat = 1.0;
 uniform float root_x = 0.0;
 uniform float fork = 0.0;
 uniform vec3 wave_axis = vec3(0.0, 0.0, 1.0);
@@ -35,6 +36,8 @@ void vertex() {
 		+ sin(u * 9.0 - t * 4.1 + phase * 1.7 + UV.y * 5.0) * 0.025 * u * flutter;
 	VERTEX.z += base * (1.0 + u * 0.8);
 	VERTEX += wave_axis * cloth * body_len;
+	// pleats: the veil folds along its rays, growing toward the tip
+	VERTEX += NORMAL * sin(UV.y * 26.0 + phase) * 0.016 * u * pleat * body_len;
 }
 
 void fragment() {
@@ -55,11 +58,17 @@ void fragment() {
 	}
 	float fr = pow(1.0 - abs(dot(NORMAL, VIEW)), 2.0);
 	// debug-stage knobs (Hakozaki-style Alpha Intensity / Min / Fresnel)
-	a = clamp(max(a + fr * alpha_fresnel * edge, alpha_min * edge), 0.0, 1.0);
+	// fresnel only thickens the sheet near its rim, not across the middle
+	float rim_band = edge * smoothstep(0.55, 0.95, u + abs(v - 0.5) * 0.9);
+	a = clamp(max(a + fr * alpha_fresnel * rim_band, alpha_min * edge), 0.0, 1.0);
+	// folds: the far side of each pleat reads darker, like stacked layers
+	float fold = 0.5 + 0.5 * cos(v * 26.0 + phase);
+	col *= mix(1.0, 0.78 + 0.22 * fold, pleat * smoothstep(0.1, 0.6, u));
+	a = min(1.0, a * mix(1.0, 0.85 + 0.35 * (1.0 - fold), pleat * u));
 	ALBEDO = col * rays;
 	ALPHA = a;
 	ROUGHNESS = 0.5;
 	SPECULAR = 0.3;
 	BACKLIGHT = kind < 0.5 ? vec3(0.9, 0.8, 0.78) : vec3(0.1, 0.12, 0.25);
-	EMISSION = (hue(u * 1.5 + v * 0.7 + fr) * fr * 0.12 * edge + (kind > 0.5 ? vec3(0.2, 0.26, 0.55) * fr * 0.4 : vec3(0.0))) * rim_glow;
+	EMISSION = vec3(1.0, 0.9, 0.85) * fr * alpha_fresnel * rim_band * 0.25 * (kind < 0.5 ? 1.0 : 0.4) + (hue(u * 1.5 + v * 0.7 + fr) * fr * 0.12 * edge + (kind > 0.5 ? vec3(0.2, 0.26, 0.55) * fr * 0.4 : vec3(0.0))) * rim_glow;
 }
