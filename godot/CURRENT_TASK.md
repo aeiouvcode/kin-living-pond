@@ -6,6 +6,7 @@ TWO WORKSTREAMS (Naksh, Sep 24 2:36-2:40 PM): fish design and fluid are built se
 - Fluid lab: godot/labs/water_lab (water_lab.gd + water.gdshader), started cycle 16. Run: `godot --path godot -- --lab=water --floor=pebble|tile|sand --depth=1 --chroma=1 --glint=1 --drops=1.2 --wind=1 --warm=1 --refl=1 --bloom=1 --crisp=1 --density=0.55`. Caustics are a ray-grid pass (caustics.gdshader) into a half-res SubViewport. Tap or drag to drop ripples.
 - Cycle 21 (fish): pleated veils, rim-only fresnel, velvet demekin, bigger eyes. Next fish turn: overlap layering in veils, fish defocus, ryukin head-on shape, fuller side fins.
 - Cycle 22 (fluid): warm sand drifts, sparse speckled wet pebbles (--density), canopy with gaps, crisper caustics (--crisp). Next fluid turn: clamp fold cusps, canopy blur/branches, depth slope, settings panel + export frame cost.
+- Cycle 23 (fish): compressed ryukin body with dorsal ridge and tapered snout, full fan side fins. Next fish turn: veil overlap layering, fish defocus, softer demekin sockets.
 - Backlog (Sep 24 7:03 PM, Naksh said "Cool" to "Listen to the waves"): water motion as score - a coarse grid of ripple crests from the water lab drives a soft ambient synth (AudioStreamGenerator, local only), so the sound always comes from the scene.
 - Bowl/pond scenes stay as they are until both labs are strong. Nothing live without a new go.
 
