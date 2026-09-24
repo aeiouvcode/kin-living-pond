@@ -1,5 +1,15 @@
 # Checkpoint
 
+- 2026-09-24 08:49 IST, cycle 8: framing.
+  - While the naming card is up, its top edge (plus a margin that scales with the bowl) acts as a soft wall and new swim targets are picked above it, so both fish stay in view on phone instead of hiding under the card.
+  - Landscape frames the bowl closer (radius x1.12): the rim runs just past the top and bottom edges and the fish scale up with it, nearer the reference's macro shot.
+  - Web QA: phone boot 6.7 s, desktop 6.2 s, 14 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK.
+- Still worse than reference, in order:
+  1. On the web export at desktop size, the demekin veil still shows a hard-edged dark wedge near the root on some turns.
+  2. Veils are one sheet; his flutter in layers.
+  3. Demekin lumps are subtle; his has visible velvet texture and a bigger dorsal.
+  4. Phone: the bowl is cut off at both sides (radius 1.3x half-width); the reference shows more of the rim.
+
 - 2026-09-24 08:12 IST, cycle 7: demekin craft.
   - Veil: minimum strand gap grows toward the tip (demekin 0.05*w, ryukin 0.035*w) and the push is re-centred, so the veil stays a fan on hard turns instead of folding into a dark whip.
   - Demekin body: subtle velvety lumps along the mid-body, slightly fuller tail end; wider, longer pectorals (0.25*w, 0.09*len); fuller dorsal (0.11*w).

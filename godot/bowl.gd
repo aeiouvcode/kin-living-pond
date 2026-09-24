@@ -106,7 +106,9 @@ func _ready() -> void:
 func _measure() -> void:
 	vis = get_viewport().get_visible_rect().size
 	center = vis * 0.5
-	radius = minf(vis.x, vis.y) * 0.5 * 1.0
+	# Landscape: frame the bowl closer, like the reference's macro shot; the
+	# rim runs just past the top and bottom edges.
+	radius = minf(vis.x, vis.y) * 0.5 * (1.12 if vis.x > vis.y * 1.2 else 1.0)
 	if vis.y > vis.x * 1.3:
 		radius = vis.x * 0.5 * 1.3
 	grid = Vector2i(maxi(16, int(vis.x / 4.4)), maxi(16, int(vis.y / 4.4)))
@@ -240,14 +242,24 @@ func cpu_sdf(p: Vector2) -> float:
 	var ry = minf(radius * 0.9, vis.y * 0.42)
 	var rx = minf(radius * 0.9, vis.x * 0.34)
 	var q = Vector2(d.x / rx, d.y / ry)
-	return (q.length() - 1.0) * minf(rx, ry)
+	var sd = (q.length() - 1.0) * minf(rx, ry)
+	# While the naming card is up, treat its top edge as a soft wall so the
+	# fish stay in view above it instead of hiding under the card.
+	if card != null:
+		sd = maxf(sd, p.y - (card.position.y - 36.0 - radius * 0.12))
+	return sd
 
 func random_point(frac: float) -> Vector2:
 	var ry = minf(radius * 0.9, vis.y * 0.42)
 	var rx = minf(radius * 0.9, vis.x * 0.34)
-	var a = randf() * TAU
-	var r = sqrt(randf()) * frac
-	return center + Vector2(cos(a) * rx, sin(a) * ry) * r
+	var pt = center
+	for _t in 8:
+		var a = randf() * TAU
+		var r = sqrt(randf()) * frac
+		pt = center + Vector2(cos(a) * rx, sin(a) * ry) * r
+		if card == null or pt.y < card.position.y - 60.0:
+			break
+	return pt
 
 # ---------- Fish ----------
 
