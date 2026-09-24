@@ -9,6 +9,7 @@ const MAX_IMP = 24
 var vis = Vector2(390, 844)
 var center = Vector2(195, 422)
 var radius = 200.0
+var fish_radius = 200.0
 var grid = Vector2i(90, 195)
 var time = 0.0
 
@@ -109,12 +110,16 @@ func _measure() -> void:
 	# Landscape: frame the bowl closer, like the reference's macro shot; the
 	# rim runs just past the top and bottom edges.
 	radius = minf(vis.x, vis.y) * 0.5 * (1.12 if vis.x > vis.y * 1.2 else 1.0)
+	fish_radius = radius
 	if vis.y > vis.x * 1.3:
+		# Phone portrait keeps the macro crop: the reference shows no rim at
+		# all, and a whole bowl at 390px leaves the fish cramped (checked c12).
 		radius = vis.x * 0.5 * 1.3
+		fish_radius = radius
 	grid = Vector2i(maxi(16, int(vis.x / 4.4)), maxi(16, int(vis.y / 4.4)))
 
 func _fish_scale() -> float:
-	return clampf(radius / 218.0, 0.9, 1.6) * 1.4
+	return clampf(fish_radius / 218.0, 0.9, 1.6) * 1.4
 
 func _mk_sim_vp() -> Array:
 	var vp = SubViewport.new()
@@ -188,6 +193,7 @@ func _size_under() -> void:
 	bg_mat.set_shader_parameter("res", vis)
 	bg_mat.set_shader_parameter("center", center)
 	bg_mat.set_shader_parameter("radius", radius)
+	bg_mat.set_shader_parameter("grid", Vector2(grid))
 
 func _build_composite() -> void:
 	comp_rect = ColorRect.new()
@@ -301,15 +307,15 @@ func _build_fish() -> void:
 # ---------- Petals ----------
 
 func _petal_target() -> int:
-	return 24 + 4 * blossoms
+	return 44 + 4 * blossoms
 
 func _new_petal(anywhere: bool) -> Dictionary:
 	var d = randf()
-	var near = randf() < 0.14
+	var near = randf() < 0.18
 	var p = random_point(1.15) if anywhere else center + Vector2.from_angle(randf() * TAU) * radius * 1.1
 	return {"pos": p, "depth": -0.4 if near else d * d, "rot": randf() * TAU, "spin": randf_range(-0.25, 0.25),
-		"size": randf_range(9.0, 15.0) * _fish_scale() * 0.62 * (1.35 if randf() < 0.3 else 1.0) * (2.4 if near else 1.0),
-		"flower": 1.0 if randf() < 0.3 else 0.0, "vel": Vector2(randf_range(-3, 3), randf_range(-3, 3))}
+		"size": randf_range(12.0, 21.0) * _fish_scale() * 0.62 * (1.35 if randf() < 0.3 else 1.0) * (1.5 if near else 1.0),
+		"flower": 0.0 if near or randf() > 0.62 else 1.0, "vel": Vector2(randf_range(-3, 3), randf_range(-3, 3))}
 
 func _seed_petals() -> void:
 	petals.clear()
@@ -352,7 +358,7 @@ func draw_petals(ci: CanvasItem, deep: bool) -> void:
 			continue
 		var blur = clampf(absf(d - 0.12) * 1.3, 0.0, 1.0)
 		var sz: float = pt.size * (1.0 - 0.3 * d) * (1.0 + blur * 0.35)
-		var alpha = (0.95 - 0.45 * d) if d >= 0.0 else 0.7
+		var alpha = (0.95 - 0.45 * d) if d >= 0.0 else 0.36
 		var r = Vector2.from_angle(pt.rot) * sz
 		var o = r.orthogonal()
 		var c: Vector2 = pt.pos
@@ -384,6 +390,7 @@ func _step_sim() -> void:
 	m.set_shader_parameter("reset", reset_frames > 0)
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	comp_mat.set_shader_parameter("sim", vp.get_texture())
+	bg_mat.set_shader_parameter("sim", vp.get_texture())
 	impulses.clear()
 	parity = 1 - parity
 	if reset_frames > 0:
@@ -458,7 +465,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				var d = f.pos.distance_to(event.position)
 				if d < 150.0 and f.state == FishScript.S.WANDER:
 					if f.bond_level() >= 2:
-						f.target = event.position
+						f.target = event.position + Vector2.from_angle(f.idx * PI + 0.6) * 55.0
 					else:
 						f.target = f.pos + (f.pos - event.position).normalized() * 120.0
 		else:

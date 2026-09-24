@@ -1,5 +1,17 @@
 # Checkpoint
 
+- 2026-09-24 13:00 IST, cycle 12: fish gap, sakura, caustics.
+  - Fish separation now measures the closest pair across both whole bodies, including two points down each veil, and keeps a visible gap (half-widths + margin). A 1.2 s look-ahead makes a fish sidestep when their paths would cross, and the one behind slows to give way. Tap targets are offset per fish so both no longer aim at the same pixel. 14 phone render frames over 20 s: no touches (c11 build touched in 2 of the same 14 frames).
+  - Sakura: 44 base (was 24), 12-21 px base size (was 9-15), 62% whole flowers (was 30%). Foreground blurred petals are single petals at 0.36 alpha; the big foreground flowers were washing the black fish grey.
+  - Caustics after Clearwater (MIT) / Evan Wallace: a soft travelling-wave web on the bowl floor, brightness from refracted-area ratio via screen derivatives, per-channel refraction for faint colour edges, plus rings from the touch ripple sim. Kept pale (tuned down twice) so it reads as light, not a pool.
+  - Phone bowl framing: tried fitting the whole bowl in 390px; it read small and cramped and the fish crossed the rim. Reverted to the macro crop, which matches the reference (no rim in his frame). Dropping this from the worse-list.
+  - Web QA: phone boot 4.4 s, desktop 2.2 s, 10 same-origin requests, 0 external, 0 CSP errors; toggle + reload OK. Pack 139 KB.
+- Still worse than reference, in order:
+  1. Desktop: a deep demekin's veil fades to a large grey smear; his black veil stays inky.
+  2. Demekin ruffle is subtle at phone size.
+  3. His petals sit in clear depth layers with a few big soft ones in front; ours are more evenly spread.
+  4. Boot splash flashes lilac before the pond.
+
 - 2026-09-24 11:54 IST, cycle 11: demekin outline, depth, sizing.
   - Demekin body edge is softly ruffled (two-octave noise on the outline from the shoulder back), closer to the reference's velvet silhouette.
   - Depth tint cut (max 0.18 water mix, was 0.4) so a deep ryukin stays readable.

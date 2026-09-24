@@ -162,30 +162,59 @@ func update(dt: float, pond, fishes: Array) -> void:
 	desire = desire * (1.0 - ew) + inward * ew * 1.6
 	if pond.cpu_sdf(pos + Vector2.from_angle(heading) * 60.0) > -30.0:
 		desire += inward
+	var yield_k = 1.0
 	for o in fishes:
 		if o == self:
 			continue
-		# Compare against the other fish's mid-body, not just its head, and add a
-		# gentle positional nudge so the two never swim through each other.
-		# Check head, mid-body and rear body on both fish: at desktop scale the
-		# bodies are long, and head-only checks let one fish slide over the
-		# other's back.
 		if o.spine.size() != N or spine.size() != N:
 			continue
-		var mine = [pos, spine[N / 2], spine[N - 3]]
-		var theirs = [o.pos, o.spine[N / 2], o.spine[N - 3]]
-		var r2 = (width + o.width) * 0.62 + (length + o.length) * 0.12
-		for mi in 3:
-			for q in theirs:
-				var dv: Vector2 = mine[mi] - q
-				var dd = dv.length()
-				if dd < r2 and dd > 0.01:
-					var push = 1.0 - dd / r2
-					var wgt = 1.0 if mi == 0 else 0.6
-					desire += dv / dd * push * 3.0 * wgt
-					var np = pos + dv / dd * push * 45.0 * dt * wgt
-					if pond.cpu_sdf(np) < -30.0:
-						pos = np
+		# Whole-body clearance: sample both spines every other joint and keep a
+		# visible gap (body half-widths plus a margin), not just no-overlap.
+		var gap = (width + o.width) * 0.62 + 18.0 + (length + o.length) * 0.06
+		var best_d = 1e9
+		var best_v = Vector2.ZERO
+		var best_mine = 0
+		# Include a point partway down each veil: the long tails were what
+		# still brushed the other fish in c11/c12 frames.
+		var mp = _body_pts()
+		var tp = o._body_pts()
+		for i in mp.size():
+			for j in tp.size():
+				var v: Vector2 = mp[i] - tp[j]
+				var l = v.length()
+				if l < best_d:
+					best_d = l
+					best_v = v
+					best_mine = i
+		if best_d < gap and best_d > 0.01:
+			var push = 1.0 - best_d / gap
+			var away = best_v / best_d
+			var wgt = 1.0 if best_mine < 5 else 0.75
+			desire += away * push * 4.0 * wgt
+			# Soft positional ease (no snaps: snaps tear the veils).
+			var np = pos + away * push * 70.0 * dt
+			if pond.cpu_sdf(np) < -30.0:
+				pos = np
+		# Look ahead ~1.2 s: if our heads are closing on each other, sidestep
+		# (steer around, not just away) and let one fish yield speed.
+		var my_v = Vector2.from_angle(heading) * maxf(speed, 8.0)
+		var their_v = Vector2.from_angle(o.heading) * maxf(o.speed, 8.0)
+		var rel = o.pos - pos
+		var rv = their_v - my_v
+		var tca = clampf(-rel.dot(rv) / maxf(rv.length_squared(), 0.001), 0.0, 1.2)
+		var miss = (rel + rv * tca).length()
+		var look_gap = gap * 1.5
+		if miss < look_gap and rel.length() < look_gap * 3.0:
+			var urgency = (1.0 - miss / look_gap) * (1.0 - tca / 1.3)
+			var fwd = Vector2.from_angle(heading)
+			var side = 1.0 if fwd.cross(rel) < 0.0 else -1.0
+			desire += fwd.orthogonal() * side * urgency * 2.2
+			# The fish with the other ahead of it (or the higher index when
+			# side by side) gives way.
+			var behind = fwd.dot(rel) > 0.0 and (idx > o.idx or fwd.dot(rel) > rel.length() * 0.6)
+			if behind:
+				yield_k = minf(yield_k, 1.0 - 0.6 * urgency)
+	want_speed *= yield_k
 	var want_h = desire.angle() if desire.length() > 0.01 else heading
 	var dh = wrapf(want_h - heading, -PI, PI)
 	var mt = turn_rate * dt
@@ -214,6 +243,15 @@ func update(dt: float, pond, fishes: Array) -> void:
 	_update_fins(dt)
 	if depth < 0.25 and speed > 10.0 and fmod(phase, 0.9) < dt * 3.0:
 		pond.add_ripple(spine[3], -0.015, 1.8)
+
+func _body_pts() -> PackedVector2Array:
+	var a = PackedVector2Array()
+	for i in range(0, N, 2):
+		a.append(spine[i])
+	var tdir = (spine[N - 1] - spine[N - 2]).normalized()
+	a.append(spine[N - 1] + tdir * tail_len * 0.25)
+	a.append(spine[N - 1] + tdir * tail_len * 0.45)
+	return a
 
 func _update_fins(dt: float) -> void:
 	# Root the veil a little inside the body so the body hides the pinch.
