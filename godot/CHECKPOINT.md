@@ -1,5 +1,17 @@
 # Checkpoint
 
+- 2026-09-24 23:57 IST, cycle 24: fluid turn - fold sheets, depth slope, stone bug.
+  - Bug fixed from c22: the per-pixel stone-drift lookup let neighbouring cells disagree, so some pebbles were sliced along cell edges. Each stone now decides from its own 5x5-cell block (one hash per neighbour, still cheap).
+  - Caustics: soft knee on the ray-grid intensity (normal light unchanged, cusps compress), and flipped triangles inside folds are kept at 30%. On desktop the big flat pale sheets from fresh drop rings are dimmer and warmer but still visible.
+  - Depth slope (`--slope=0..1`): shallow bottom-left, deep top-right; absorption and refraction follow it and the light net spreads thinner in deep water.
+  - Canopy reflection is softer (lower-frequency blossom, wider gaps). Tried thin dark branches: they read as hairs on the lens, dropped.
+  - Fresnel and the sky tint are capped at steep slopes.
+- Still worse than Clearwater / real water, in order:
+  1. Desktop fold sheets: fresh drop rings still paint flat pale patches on the coarse desktop grid; needs a denser caustic grid on desktop or a filtered target.
+  2. The canopy is still pink stains with no tree structure.
+  3. The depth slope is subtle at phone size.
+  4. No on-screen settings panel; export frame cost not measured.
+
 - 2026-09-24 22:53 IST, cycle 23: fish turn - body section and side fins. Tested solo (model_test.sh sheets, before = c21 kin-mt3, after = kin-mt4).
   - Ryukin body: laterally compressed (narrower), tapered snout, and the upper section narrows into a dorsal ridge, so it reads as a tall teardrop head-on and slimmer from the top instead of an egg.
   - Side fins: pectorals, pelvics and the anal pair are now real fans (longer, twice as wide, 10-12 subdivisions) with rounded scalloped edges that cup and hang; they show in both silhouettes on both fish.
