@@ -10,6 +10,8 @@ uniform int floor_kind = 0;
 uniform float chroma = 1.0;
 uniform float glint = 1.0;
 uniform float warm = 1.0;
+uniform float bloom = 1.0;
+uniform float refl = 1.0;
 
 vec2 hash2(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
@@ -76,27 +78,7 @@ void fragment() {
 	float aspect = grid.y / grid.x;
 	float sc = grid.x / 96.0; // keep world scale per pixel the same on phone and desktop
 	vec2 p = vec2(uv.x, uv.y * aspect) * 0.5 * sc;
-	vec2 tx = 1.0 / grid;
-	float edge_fade = smoothstep(0.0, 0.04, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)) );
-	float hc = sim_h(uv);
-	float hl = sim_h(uv - vec2(tx.x, 0.0));
-	float hr = sim_h(uv + vec2(tx.x, 0.0));
-	float hd = sim_h(uv - vec2(0.0, tx.y));
-	float hu = sim_h(uv + vec2(0.0, tx.y));
-	float h1 = sim_h(uv + tx);
-	float h2 = sim_h(uv - tx);
-	float h3 = sim_h(uv + vec2(tx.x, -tx.y));
-	float h4 = sim_h(uv + vec2(-tx.x, tx.y));
-	// sim cell size in p units = 0.5 / grid.x
-	float cell = 0.5 * sc / grid.x;
-	vec2 sgrad = vec2(hr - hl, hu - hd) * 0.5 / cell * 0.004;
-	vec3 shess = vec3(hl + hr - 2.0 * hc, hu + hd - 2.0 * hc, (h1 + h2 - h3 - h4) * 0.25) / (cell * cell) * 0.004;
-	sgrad *= edge_fade;
-	shess *= edge_fade;
-	vec2 wg; vec3 wh;
-	swell(p, wg, wh);
-	vec2 grad = sgrad + wg;
-	vec3 hs = shess + wh;
+	vec2 grad = surf_grad(uv, p);
 	vec3 n = normalize(vec3(-grad, 1.0));
 
 	// refraction of the floor, dispersed per channel (Clearwater-style IOR split)
@@ -111,12 +93,20 @@ void fragment() {
 	// caustics from the ray-grid pass, looked up where this pixel's view ray
 	// meets the floor
 	vec2 fuv = uv + p_to_uv_delta(off);
-	vec2 ct = 0.5 / vec2(textureSize(caus_tex, 0));
+	vec2 ct = 0.8 / vec2(textureSize(caus_tex, 0));
 	vec3 caus = (texture(caus_tex, fuv + vec2(ct.x, ct.y)).rgb + texture(caus_tex, fuv + vec2(-ct.x, ct.y)).rgb
 		+ texture(caus_tex, fuv + vec2(ct.x, -ct.y)).rgb + texture(caus_tex, fuv - ct).rgb) * 0.5; // 4-tap soften
+
+	// cheap bloom: a ring of wider taps, only the bright part glows
+	vec3 glow = vec3(0.0);
+	for (int k = 0; k < 8; k++) {
+		float ang = float(k) * 0.785398;
+		glow += texture(caus_tex, fuv + vec2(cos(ang), sin(ang)) * ct * 10.0).rgb;
+	}
+	glow = max(glow / 8.0 * 2.0 - 1.2, vec3(0.0));
 	vec3 cl = max(caus - 1.0, vec3(0.0));
 	vec3 sun = mix(vec3(1.0), vec3(1.0, 0.9, 0.74), warm);
-	vec3 col = base * (0.66 + 0.26 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08;
+	vec3 col = base * (0.66 + 0.26 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08 + sun * glow * 0.1 * bloom;
 
 	// depth tint and a soft vignette
 	vec2 cuv = uv - 0.5;
@@ -133,6 +123,15 @@ void fragment() {
 	float sp = pow(max(dot(n, Hh), 0.0), shin) * sqrt(shin / 900.0);
 	col += vec3(1.0, 0.97, 0.9) * sp * 2.0 * glint;
 	col += vec3(0.85, 0.9, 1.0) * pow(1.0 - n.z, 2.0) * 0.6;
+	// surface reflection: a soft warm sky with a blossom canopy at one edge,
+	// seen in the reflected ray so it wobbles with every ripple
+	vec3 R = reflect(vec3(0.0, 0.0, -1.0), n);
+	vec2 rp = uv * vec2(1.0, grid.y / grid.x) + R.xy * 0.9;
+	float canopy = smoothstep(0.62, 0.05, rp.x + 0.12 * sin(rp.y * 9.0) + 0.06 * sin(rp.y * 23.0 + 1.3));
+	vec3 sky = mix(vec3(0.98, 0.93, 0.88), vec3(0.8, 0.84, 0.98), clamp(rp.y * 0.4, 0.0, 1.0));
+	sky = mix(sky, vec3(0.96, 0.72, 0.78), canopy * 0.8);
+	float fres = 0.02 + 0.98 * pow(1.0 - n.z, 5.0);
+	col = mix(col, sky, clamp(fres + 0.05 + 0.4 * canopy, 0.0, 1.0) * refl);
 
 	col = col / (1.0 + max(col - 0.85, vec3(0.0)) * 0.9); // soft shoulder, no blowout
 	COLOR = vec4(col, 1.0);

@@ -25,6 +25,6 @@ void fragment() {
 	vec2 a = dFdx(src);
 	vec2 b = dFdy(src);
 	float area = abs(a.x * b.y - a.y * b.x);
-	float I = min(area, 12.0) * gain;
+	float I = min(area, 4.0) * gain;
 	COLOR = vec4(mask * I, 1.0);
 }

@@ -1,5 +1,16 @@
 # Checkpoint
 
+- 2026-09-24 19:57 IST, cycle 20: fluid turn - zipper hunt, surface reflection, bloom.
+  - Zipper: diagnosed with isolation renders (--wind=0 removes it, turning off reflection/bloom/glints does not), so it came from ray folds in the swell caustics, not the ripple sim. Fixes kept: cubic B-spline sampling of the sim heights (smooth slopes), 1.5-cell gradients, lower caustic focus (0.92) so fewer rays fold, wider 4-tap soften. Tried and dropped: an HDR caustics target (kept fold spikes -> speckle) and a full-res target (hatching at folds). 2D MSAA is not supported in GLES3.
+  - Surface reflection: reflected-ray lookup of a warm sky with a blossom-pink canopy along one side, so a pink wash with a wobbling edge lies over the left of the pool (`--refl=0..1`).
+  - Bloom: a ring of wide taps on the caustics adds a soft warm glow on the brightest lines (`--bloom=0..1`).
+- Still worse than Clearwater / real water, in order:
+  1. The caustic net is softer than c17: zipper gone, but the lines lost some crispness. A proper fix is a filtered (mipmapped) caustics target like Clearwater's.
+  2. The canopy reflection reads as a flat wash; it needs leaf gaps and brighter sky between them.
+  3. Sand is still flat grey-olive between the lines, with no depth changes.
+  4. Pebbles have no speckle or wet highlights.
+  5. No on-screen settings panel; web frame cost not measured (CPU sim ~20k cells + 3 x ~36k-vertex caustic grid per frame).
+
 - 2026-09-24 18:52 IST, cycle 19: first fixes driven by the solo model tests.
   - Veils: fin mesh outline is now shaped in geometry, not only by alpha: rounded lobe ends, uneven scallops between rays, a deep centre fork on each caudal fin, and the sheet hangs more toward its tip with a slight edge wave. The tail reads as two forked, drooping lobes in side and top silhouettes (was two hard wedges). Dorsal has a ragged, hanging trailing edge.
   - Eyes: socket rim of body tissue, gold (ryukin) / copper (demekin) iris disc, big black pupil, clear flattened glossy lens dome on top; faces out and slightly forward.

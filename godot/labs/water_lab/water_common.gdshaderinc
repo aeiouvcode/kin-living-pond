@@ -27,17 +27,45 @@ void swell(vec2 p, out vec2 grad, out vec3 hess) {
 	hess *= wind;
 }
 
+// Cubic B-spline sample of the sim height (4 bilinear taps). Bilinear
+// heights have kinked slopes at every cell edge, which focus into a sawtooth
+// "zipper" along caustic lines; the B-spline is smooth through second order.
+float h_bspline(vec2 uv) {
+	vec2 tp = uv * grid - 0.5;
+	vec2 i = floor(tp);
+	vec2 f = tp - i;
+	vec2 f2 = f * f;
+	vec2 f3 = f2 * f;
+	vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0;
+	vec2 w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;
+	vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0;
+	vec2 w3 = f3 / 6.0;
+	vec2 g0 = w0 + w1;
+	vec2 g1 = w2 + w3;
+	vec2 h0 = (w1 / g0) - 0.5 + i;
+	vec2 h1 = (w3 / g1) + 1.5 + i;
+	vec2 inv = 1.0 / grid;
+	float a = textureLod(height_tex, (vec2(h0.x, h0.y) + 0.5) * inv, 0.0).r;
+	float b = textureLod(height_tex, (vec2(h1.x, h0.y) + 0.5) * inv, 0.0).r;
+	float c = textureLod(height_tex, (vec2(h0.x, h1.y) + 0.5) * inv, 0.0).r;
+	float d = textureLod(height_tex, (vec2(h1.x, h1.y) + 0.5) * inv, 0.0).r;
+	return g0.y * (g0.x * a + g1.x * b) + g1.y * (g0.x * c + g1.x * d);
+}
+
 // surface gradient (p units) at a uv, sim + swell
 vec2 surf_grad(vec2 uv, vec2 p) {
 	vec2 tx = 1.0 / grid;
 	float sc = grid.x / 96.0;
 	float cell = 0.5 * sc / grid.x;
-	float hl = textureLod(height_tex, uv - vec2(tx.x, 0.0), 0.0).r;
-	float hr = textureLod(height_tex, uv + vec2(tx.x, 0.0), 0.0).r;
-	float hd = textureLod(height_tex, uv - vec2(0.0, tx.y), 0.0).r;
-	float hu = textureLod(height_tex, uv + vec2(0.0, tx.y), 0.0).r;
+	// 1.5-cell central differences: smoother normals, so caustic lines from
+	// the sim do not show the bilinear "zipper"
+	vec2 o = tx * 1.5;
+	float hl = h_bspline(uv - vec2(o.x, 0.0));
+	float hr = h_bspline(uv + vec2(o.x, 0.0));
+	float hd = h_bspline(uv - vec2(0.0, o.y));
+	float hu = h_bspline(uv + vec2(0.0, o.y));
 	float ef = smoothstep(0.0, 0.04, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
-	vec2 g = vec2(hr - hl, hu - hd) * 0.5 / cell * 0.004 * ef;
+	vec2 g = vec2(hr - hl, hu - hd) / 3.0 / cell * 0.004 * ef;
 	vec2 wg; vec3 wh;
 	swell(p, wg, wh);
 	return g + wg;

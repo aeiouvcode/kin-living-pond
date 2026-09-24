@@ -11,7 +11,7 @@ var W = 96
 var H = 208
 const DAMP = 0.985
 
-var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0}
+var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0}
 var cur := PackedFloat32Array()
 var prev := PackedFloat32Array()
 var img: Image
@@ -57,6 +57,8 @@ func _ready() -> void:
 	mat.set_shader_parameter("glint", settings.glint)
 	mat.set_shader_parameter("wind", settings.wind)
 	mat.set_shader_parameter("warm", settings.warm)
+	mat.set_shader_parameter("bloom", settings.bloom)
+	mat.set_shader_parameter("refl", settings.refl)
 	mat.set_shader_parameter("caus_tex", caus_vp.get_texture())
 	rect.material = mat
 	layer.add_child(rect)
@@ -71,11 +73,12 @@ func _ready() -> void:
 		_drop(Vector2(rng.randf_range(0.2, 0.8), rng.randf_range(0.2, 0.8)), 0.35, 2.4)
 
 func _build_caustics(vsz: Vector2) -> void:
-	# half-resolution caustics target, redrawn every frame (additive ray grid)
+	# half-resolution HDR caustics target (a full-res one showed hatching at the folds), ray grid ~1.5 px, redrawn every frame (additive ray grid)
 	caus_vp = SubViewport.new()
 	var cs = Vector2i(int(vsz.x * 0.5), int(vsz.y * 0.5))
 	caus_vp.size = cs
 	caus_vp.transparent_bg = false
+	caus_vp.use_hdr_2d = false # HDR kept fold spikes that read as speckle; 8-bit clips them softly
 	caus_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	caus_vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	add_child(caus_vp)
@@ -84,8 +87,8 @@ func _build_caustics(vsz: Vector2) -> void:
 	bg.size = Vector2(cs)
 	caus_vp.add_child(bg)
 	# ray grid, ~1.6 px per cell, overscanned so edges stay lit after refraction
-	var gx = int(cs.x / 1.6)
-	var gy = int(cs.y / 1.6)
+	var gx = int(cs.x / 1.5)
+	var gy = int(cs.y / 1.5)
 	var over = 0.06
 	var verts = PackedVector2Array()
 	var idx = PackedInt32Array()
@@ -117,7 +120,7 @@ func _build_caustics(vsz: Vector2) -> void:
 		m.set_shader_parameter("depth", settings.depth)
 		m.set_shader_parameter("wind", settings.wind)
 		m.set_shader_parameter("gain", 0.5)
-		m.set_shader_parameter("focus", 1.1)
+		m.set_shader_parameter("focus", 0.92) # lower focus = fewer ray folds (folds alias into sawtooth)
 		mi.material = m
 		caus_vp.add_child(mi)
 		caus_mats.append(m)
