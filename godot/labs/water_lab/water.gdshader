@@ -14,6 +14,7 @@ uniform float bloom = 1.0;
 uniform float refl = 1.0;
 uniform float crisp = 1.0;
 uniform float density = 0.55;
+uniform float slope = 1.0;
 
 
 vec2 hash2(vec2 p) {
@@ -52,7 +53,6 @@ vec3 floor_col(vec2 p) {
 	vec3 col = mix(vec3(0.95, 0.83, 0.68), vec3(1.0, 0.92, 0.79), sandn * 0.45 + big * 0.35);
 	col *= 0.94 + 0.08 * grain;
 	float ao = 1.0;
-	float drift = density * (0.35 + 1.1 * vnz(id * 0.137 + 4.0)); // stone drifts, one lookup per pixel
 	for (int j = -1; j <= 1; j++) {
 		for (int i = -1; i <= 1; i++) {
 			vec2 o = vec2(float(i), float(j));
@@ -61,6 +61,9 @@ vec3 floor_col(vec2 p) {
 			float rad = 0.26 + 0.2 * hv2.x;
 			vec2 r = (o + 0.25 + hv * 0.5 - f) * vec2(1.0, 0.8 + 0.4 * hv2.y);
 			float dd = length(r) / rad;
+			// stone drifts: each stone decides from its own cell's block (5x5 cells),
+			// so a stone is never cut at a cell edge; one hash per neighbour
+			float drift = density * (0.3 + 1.2 * hash2(floor((id + o) * 0.2) + 4.0).x);
 			float keep = step(hash2(id + o + 29.0).x, drift);
 			if (keep < 0.5) { continue; }
 			// contact shadow, pushed away from the sun
@@ -100,7 +103,9 @@ void fragment() {
 	vec3 n = normalize(vec3(-grad, 1.0));
 
 	// refraction of the floor, dispersed per channel (Clearwater-style IOR split)
-	float d = 0.35 * depth;
+	// the pool floor slopes: shallow at the bottom-left, deep toward the top-right
+	float dl = depth * (1.0 + slope * (0.55 * (1.0 - uv.y) + 0.25 * uv.x - 0.4));
+	float d = 0.35 * dl;
 	float ch = 0.035 * chroma;
 	vec2 off = -grad * d;
 	vec3 base;
@@ -122,6 +127,7 @@ void fragment() {
 		glow += texture(caus_tex, fuv + vec2(cos(ang), sin(ang)) * ct * 10.0).rgb;
 	}
 	glow = max(glow / 8.0 * 2.0 - 1.2, vec3(0.0));
+	caus = mix(vec3(1.0), caus, clamp(1.25 - 0.35 * dl, 0.45, 1.0)); // deeper water spreads the net thinner
 	vec3 cl = max(caus - 1.0, vec3(0.0));
 	vec3 sun = mix(vec3(1.0), vec3(1.0, 0.9, 0.74), warm);
 	vec3 col = base * (0.72 + 0.24 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08 + sun * glow * 0.1 * bloom;
@@ -130,7 +136,7 @@ void fragment() {
 	vec2 cuv = uv - 0.5;
 	float vig = clamp(1.0 - dot(cuv * vec2(1.3, 0.9), cuv * vec2(1.3, 0.9)) * 1.4, 0.0, 1.0);
 	// Beer-Lambert style absorption: red fades first, so the water reads aqua
-	vec3 absorb = exp(-vec3(0.10, 0.05, 0.045) * depth * (1.3 - 0.5 * vig));
+	vec3 absorb = exp(-vec3(0.10, 0.05, 0.045) * dl * (1.3 - 0.5 * vig));
 	col = col * absorb + mix(vec3(0.10, 0.30, 0.38), vec3(0.16, 0.36, 0.42), warm) * (1.0 - absorb.r) * 0.45;
 
 	// sun glints
@@ -140,7 +146,7 @@ void fragment() {
 	float shin = mix(900.0, 120.0, spread);
 	float sp = pow(max(dot(n, Hh), 0.0), shin) * sqrt(shin / 900.0);
 	col += vec3(1.0, 0.97, 0.9) * sp * 2.0 * glint;
-	col += vec3(0.85, 0.9, 1.0) * pow(1.0 - n.z, 2.0) * 0.6;
+	col += vec3(0.85, 0.9, 1.0) * min(pow(1.0 - n.z, 2.0), 0.12) * 0.6;
 	// surface reflection: a soft warm sky with a blossom canopy at one edge,
 	// seen in the reflected ray so it wobbles with every ripple
 	vec3 R = reflect(vec3(0.0, 0.0, -1.0), n);
@@ -148,12 +154,13 @@ void fragment() {
 	float canopy = smoothstep(0.62, 0.05, rp.x + 0.12 * sin(rp.y * 9.0) + 0.06 * sin(rp.y * 23.0 + 1.3));
 	vec3 sky = mix(vec3(0.98, 0.93, 0.88), vec3(0.8, 0.84, 0.98), clamp(rp.y * 0.4, 0.0, 1.0));
 	// canopy is clusters of blossom with bright sky showing through the gaps
-	float leaf = vnz(rp * 14.0) * 0.65 + vnz(rp * 37.0 + 3.0) * 0.35;
-	float gaps = smoothstep(0.38, 0.7, leaf);
+	float leaf = vnz(rp * 9.0) * 0.75 + vnz(rp * 21.0 + 3.0) * 0.25; // soft: reflections are out of focus
+	float gaps = smoothstep(0.34, 0.74, leaf);
+
 	float cmask = canopy * gaps;
 	vec3 bloss = mix(vec3(0.93, 0.62, 0.72), vec3(1.0, 0.82, 0.86), vnz(rp * 60.0));
 	sky = mix(sky * (1.0 + 0.15 * canopy), bloss, cmask * 0.75);
-	float fres = 0.02 + 0.98 * pow(1.0 - n.z, 5.0);
+	float fres = min(0.02 + 0.98 * pow(1.0 - n.z, 5.0), 0.3); // capped: steep fresh drop rings were flat cream sheets
 	col = mix(col, sky, clamp(fres + 0.05 + 0.4 * cmask + 0.1 * canopy, 0.0, 1.0) * refl);
 
 	col = col / (1.0 + max(col - 0.85, vec3(0.0)) * 0.9); // soft shoulder, no blowout
