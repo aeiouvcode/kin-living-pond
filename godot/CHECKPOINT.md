@@ -1,5 +1,16 @@
 # Checkpoint
 
+- 2026-09-24 18:10 IST, cycle 17: real floor caustics (Naksh 6:03 PM: "Can use fluid resources i gave or anything that makes this better feasibly").
+  - Studied Clearwater's caustics pass (MIT): a grid of sun rays is refracted through the surface and drawn where it lands on the floor, additively; each triangle's brightness is its original area over its landed area, so bunched rays glow. One draw per colour channel with its own refraction strength gives the rainbow fringes.
+  - Our version in Godot Compatibility: a half-resolution SubViewport redrawn each frame with a ray-grid ArrayMesh (~1.6 px cells, overscanned at the edges), vertex shader refracts each vertex using the shared surface gradient (sim + swell, in water_common.gdshaderinc), fragment uses dFdx/dFdy area ratio, blend_add, 3 channels. The surface shader looks the caustics up where each view ray meets the floor, with a 4-tap soften.
+  - Result: a continuous net of bright lines instead of shards; ripple rings throw focused rings of light. Warmer look (sun-tinted caustics, warmer sand, gentler absorption, `--warm=0..1`). Pebbles get contact shadows and the pale outline ring is gone.
+- Still worse than Clearwater / real water, in order:
+  1. Some caustic lines show a sawtooth "zipper" edge (half-res target plus bilinear sim gradients); needs a finer target or smoothed gradients.
+  2. The surface itself is almost invisible: no sky or rim reflection, no bloom or glare (Clearwater has lens glare + bloom).
+  3. Sand reads grey-olive between caustics; floor needs more KIN colour and some depth variation (Clearwater uses a pebble texture with height).
+  4. Pebbles are flat-coloured discs; they want speckle and wet highlights.
+  5. No on-screen settings panel; web frame cost of the per-frame ray grid (3 x ~33k verts on phone) not yet measured.
+
 - 2026-09-24 17:55 IST, cycle 16: fluid lab v1 (water on its own, no fish).
   - Heightfield ripple sim on the CPU (~20k square cells, long axis follows the viewport, two steps per frame, damped), random drops plus tap/drag drops, uploaded each frame as a float texture.
   - Shader: analytic ambient swell (9 travelling waves) plus the sim; floor refraction split per colour channel (dispersion); caustics as the inverse area change of the refracted ray bundle, det(I + k*Hessian), per channel (Clearwater idea, our own code); Beer-Lambert style absorption so the water reads aqua; sun glints with shininess eased by local normal variation (a cheap LEAN-like anti-shimmer); soft sky sheen; highlight shoulder so caustics do not clip.

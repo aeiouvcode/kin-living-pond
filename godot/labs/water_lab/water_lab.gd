@@ -11,13 +11,15 @@ var W = 96
 var H = 208
 const DAMP = 0.985
 
-var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0}
+var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0}
 var cur := PackedFloat32Array()
 var prev := PackedFloat32Array()
 var img: Image
 var tex: ImageTexture
 var rect: ColorRect
 var mat: ShaderMaterial
+var caus_mats = []
+var caus_vp: SubViewport
 var t := 0.0
 var drop_acc := 0.0
 var rng := RandomNumberGenerator.new()
@@ -39,6 +41,7 @@ func _ready() -> void:
 	prev.resize(W * H)
 	img = Image.create_empty(W, H, false, Image.FORMAT_RF)
 	tex = ImageTexture.create_from_image(img)
+	_build_caustics(vsz)
 	var layer = CanvasLayer.new()
 	add_child(layer)
 	rect = ColorRect.new()
@@ -53,6 +56,8 @@ func _ready() -> void:
 	mat.set_shader_parameter("chroma", settings.chroma)
 	mat.set_shader_parameter("glint", settings.glint)
 	mat.set_shader_parameter("wind", settings.wind)
+	mat.set_shader_parameter("warm", settings.warm)
+	mat.set_shader_parameter("caus_tex", caus_vp.get_texture())
 	rect.material = mat
 	layer.add_child(rect)
 	var tag = Label.new()
@@ -64,6 +69,58 @@ func _ready() -> void:
 	# a few opening drops so the first frame already has rings
 	for i in 3:
 		_drop(Vector2(rng.randf_range(0.2, 0.8), rng.randf_range(0.2, 0.8)), 0.35, 2.4)
+
+func _build_caustics(vsz: Vector2) -> void:
+	# half-resolution caustics target, redrawn every frame (additive ray grid)
+	caus_vp = SubViewport.new()
+	var cs = Vector2i(int(vsz.x * 0.5), int(vsz.y * 0.5))
+	caus_vp.size = cs
+	caus_vp.transparent_bg = false
+	caus_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	caus_vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
+	add_child(caus_vp)
+	var bg = ColorRect.new()
+	bg.color = Color(0, 0, 0)
+	bg.size = Vector2(cs)
+	caus_vp.add_child(bg)
+	# ray grid, ~1.6 px per cell, overscanned so edges stay lit after refraction
+	var gx = int(cs.x / 1.6)
+	var gy = int(cs.y / 1.6)
+	var over = 0.06
+	var verts = PackedVector2Array()
+	var idx = PackedInt32Array()
+	for j in gy + 1:
+		for i in gx + 1:
+			verts.append(Vector2((-over + (1.0 + 2.0 * over) * i / gx) * cs.x, (-over + (1.0 + 2.0 * over) * j / gy) * cs.y))
+	for j in gy:
+		for i in gx:
+			var a = j * (gx + 1) + i
+			idx.append_array([a, a + 1, a + gx + 1, a + 1, a + gx + 2, a + gx + 1])
+	var arr = []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_INDEX] = idx
+	var mesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	var sh = load("res://labs/water_lab/caustics.gdshader")
+	var masks = [Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)]
+	for c in 3:
+		var mi = MeshInstance2D.new()
+		mi.mesh = mesh
+		var m = ShaderMaterial.new()
+		m.shader = sh
+		m.set_shader_parameter("height_tex", tex)
+		m.set_shader_parameter("grid", Vector2(W, H))
+		m.set_shader_parameter("mask", masks[c])
+		m.set_shader_parameter("ior_k", 1.0 + (c - 1) * 0.06 * settings.chroma)
+		m.set_shader_parameter("vp_size", Vector2(cs))
+		m.set_shader_parameter("depth", settings.depth)
+		m.set_shader_parameter("wind", settings.wind)
+		m.set_shader_parameter("gain", 0.5)
+		m.set_shader_parameter("focus", 1.1)
+		mi.material = m
+		caus_vp.add_child(mi)
+		caus_mats.append(m)
 
 func _drop(uv: Vector2, amt: float, r: float = 3.2) -> void:
 	var cx = uv.x * W
@@ -96,6 +153,8 @@ func _process(delta: float) -> void:
 	img.set_data(W, H, false, Image.FORMAT_RF, cur.to_byte_array())
 	tex.update(img)
 	mat.set_shader_parameter("time", t)
+	for m in caus_mats:
+		m.set_shader_parameter("time", t)
 
 func _input(e: InputEvent) -> void:
 	var vs = get_viewport().get_visible_rect().size

@@ -4,40 +4,16 @@ shader_type canvas_item;
 // light focusing (area change of refracted rays), approximated here from the
 // surface Laplacian, computed per colour channel for dispersion.
 
-uniform sampler2D height_tex : filter_linear, repeat_disable;
-uniform vec2 grid = vec2(96.0, 208.0);
-uniform float time = 0.0;
+#include "res://labs/water_lab/water_common.gdshaderinc"
+uniform sampler2D caus_tex : filter_linear, repeat_disable;
 uniform int floor_kind = 0;
-uniform float depth = 1.0;
 uniform float chroma = 1.0;
 uniform float glint = 1.0;
-uniform float wind = 1.0;
+uniform float warm = 1.0;
 
 vec2 hash2(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
 	return fract(sin(p) * 43758.5453);
-}
-
-// ambient swell: travelling sines. Returns grad (xy) and Hessian (xx, yy, xy)
-// so caustics can use the true area change of refracted rays.
-void swell(vec2 p, out vec2 grad, out vec3 hess) {
-	grad = vec2(0.0);
-	hess = vec3(0.0);
-	for (int i = 0; i < 9; i++) {
-		float fi = float(i);
-		float ang = fi * 2.399 + 0.3;
-		float kl = 18.0 + fi * 9.0;
-		vec2 k = vec2(cos(ang), sin(ang)) * kl;
-		float w = sqrt(9.8 * kl) * 0.22;
-		float a = 0.0011 * pow(0.85, fi) * 18.0 / kl;
-		float ph = dot(k, p) - w * time + fi * 1.7;
-		float s = sin(ph);
-		float c = cos(ph);
-		grad += a * c * k;
-		hess += -a * s * vec3(k.x * k.x, k.y * k.y, k.x * k.y);
-	}
-	grad *= wind;
-	hess *= wind;
 }
 
 float sim_h(vec2 uv) { return texture(height_tex, uv).r; }
@@ -63,7 +39,7 @@ vec3 floor_col(vec2 p) {
 	vec2 id = floor(g);
 	vec2 f = fract(g);
 	float sandn = sin(p.x * 60.0 + sin(p.y * 17.0) * 2.0) * 0.5 + 0.5;
-	vec3 col = mix(vec3(0.86, 0.80, 0.74), vec3(0.92, 0.87, 0.80), sandn * 0.5);
+	vec3 col = mix(vec3(0.93, 0.84, 0.74), vec3(0.98, 0.91, 0.80), sandn * 0.5);
 	float ao = 1.0;
 	for (int j = -1; j <= 1; j++) {
 		for (int i = -1; i <= 1; i++) {
@@ -73,7 +49,9 @@ vec3 floor_col(vec2 p) {
 			float rad = 0.26 + 0.2 * hv2.x;
 			vec2 r = (o + 0.25 + hv * 0.5 - f) * vec2(1.0, 0.8 + 0.4 * hv2.y);
 			float dd = length(r) / rad;
-			ao *= mix(0.82, 1.0, smoothstep(0.95, 1.5, dd));
+			// contact shadow, pushed away from the sun
+			float ds = length(r + vec2(-0.35, -0.55) * rad * 0.35) / rad;
+			ao *= mix(0.62, 1.0, smoothstep(0.85, 1.45, ds));
 			if (dd < 1.0) {
 				vec3 c0 = vec3(0.90, 0.74, 0.66);
 				vec3 c1 = vec3(0.70, 0.68, 0.86);
@@ -85,7 +63,7 @@ vec3 floor_col(vec2 p) {
 				float dome = sqrt(max(1.0 - dd * dd, 0.0));
 				vec2 lr = normalize(vec2(0.35, 0.55));
 				float lit = 0.72 + 0.28 * dome + 0.18 * dot(r / rad, -lr) * dome;
-				col = mix(col, sc * lit, smoothstep(1.0, 0.9, dd));
+				col = mix(col * ao, sc * lit, smoothstep(1.0, 0.93, dd));
 				ao = 1.0;
 			}
 		}
@@ -130,25 +108,22 @@ void fragment() {
 	base.g = floor_col(p + off).g;
 	base.b = floor_col(p + off * (1.0 + ch)).b;
 
-	// caustics: light through the surface lands on the floor; the brightness is
-	// the inverse area change of the refracted ray bundle, det(I + d*k*Hessian)
-	float kc = 0.42 * depth;
-	vec3 caus;
-	for (int c = 0; c < 3; c++) {
-		float kk = kc * (1.0 + (float(c) - 1.0) * ch * 3.0);
-		float det = (1.0 + kk * hs.x) * (1.0 + kk * hs.y) - kk * kk * hs.z * hs.z;
-		caus[c] = 1.0 / max(abs(det), 0.22);
-	}
-	caus = clamp(caus, 0.0, 6.0);
+	// caustics from the ray-grid pass, looked up where this pixel's view ray
+	// meets the floor
+	vec2 fuv = uv + p_to_uv_delta(off);
+	vec2 ct = 0.5 / vec2(textureSize(caus_tex, 0));
+	vec3 caus = (texture(caus_tex, fuv + vec2(ct.x, ct.y)).rgb + texture(caus_tex, fuv + vec2(-ct.x, ct.y)).rgb
+		+ texture(caus_tex, fuv + vec2(ct.x, -ct.y)).rgb + texture(caus_tex, fuv - ct).rgb) * 0.5; // 4-tap soften
 	vec3 cl = max(caus - 1.0, vec3(0.0));
-	vec3 col = base * (0.7 + 0.16 * cl) + vec3(1.0, 0.95, 0.84) * cl * cl * 0.018;
+	vec3 sun = mix(vec3(1.0), vec3(1.0, 0.9, 0.74), warm);
+	vec3 col = base * (0.66 + 0.26 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08;
 
 	// depth tint and a soft vignette
 	vec2 cuv = uv - 0.5;
 	float vig = clamp(1.0 - dot(cuv * vec2(1.3, 0.9), cuv * vec2(1.3, 0.9)) * 1.4, 0.0, 1.0);
 	// Beer-Lambert style absorption: red fades first, so the water reads aqua
-	vec3 absorb = exp(-vec3(0.32, 0.1, 0.05) * depth * (1.3 - 0.5 * vig));
-	col = col * absorb + vec3(0.10, 0.26, 0.34) * (1.0 - absorb.r) * 0.55;
+	vec3 absorb = exp(-vec3(0.22, 0.08, 0.06) * depth * (1.3 - 0.5 * vig));
+	col = col * absorb + mix(vec3(0.10, 0.26, 0.34), vec3(0.22, 0.34, 0.36), warm) * (1.0 - absorb.r) * 0.5;
 
 	// sun glints
 	vec3 L = normalize(vec3(-0.35, -0.55, 0.76));
