@@ -7,8 +7,14 @@ uniform float kind = 0.0;
 // dappled light that crosses the floor also slides over the fish
 uniform sampler2D caus_tex : source_color, filter_linear, repeat_disable;
 uniform float caus_amt = 0.0;
+uniform float caus_cap = 8.0; // pond-only: stop white caustic knots on translucent fins
 // colour the pale veil fades to at its tips (pond warms it so it does not read milky)
 uniform vec3 veil_far : source_color = vec3(0.99, 0.98, 1.0);
+// Pond-specific light control; default preserves the solo fish lab.
+uniform float veil_light = 1.0;
+uniform float veil_blend = 0.35;
+uniform float veil_coverage = 0.0; // pond: keep tips legible over pale stones
+uniform vec3 veil_root : source_color = vec3(1.0, 0.82, 0.76);
 uniform float time_s = 0.0;
 uniform float swim = 1.0;
 uniform float bend = 0.0;
@@ -54,13 +60,13 @@ void fragment() {
 	// rounded lobe tips
 	rag -= 0.12 * pow(abs(v - 0.5) * 2.0, 3.0);
 	float edge = smoothstep(1.0, rag, u) * smoothstep(0.0, 0.12, v) * smoothstep(1.0, 0.88, v);
-	float a = opacity * edge * mix(1.0, 0.45, u) * rays;
+	float a = opacity * edge * mix(1.0, mix(0.45, 0.70, veil_coverage), u) * rays;
 	vec3 col;
 	if (kind < 0.5) {
-		col = mix(vec3(1.0, 0.82, 0.76), veil_far, smoothstep(0.0, 0.35, u));
+		col = mix(veil_root, veil_far, smoothstep(0.0, veil_blend, u));
 	} else {
 		col = mix(vec3(0.02, 0.02, 0.03), vec3(0.05, 0.06, 0.12), u);
-		a = min(0.97, a * 1.5);
+		a = min(0.98, a * 1.85);
 	}
 	float fr = pow(1.0 - abs(dot(NORMAL, VIEW)), 2.0);
 	// debug-stage knobs (Hakozaki-style Alpha Intensity / Min / Fresnel)
@@ -75,11 +81,11 @@ void fragment() {
 	ALPHA = a;
 	ROUGHNESS = 0.5;
 	SPECULAR = 0.3;
-	BACKLIGHT = kind < 0.5 ? vec3(0.9, 0.8, 0.78) : vec3(0.1, 0.12, 0.25);
+	BACKLIGHT = kind < 0.5 ? vec3(0.9, 0.8, 0.78) * veil_light : vec3(0.1, 0.12, 0.25);
 	EMISSION = vec3(1.0, 0.9, 0.85) * fr * alpha_fresnel * rim_band * 0.25 * (kind < 0.5 ? 1.0 : 0.4) + (hue(u * 1.5 + v * 0.7 + fr) * fr * 0.12 * edge + (kind > 0.5 ? vec3(0.2, 0.26, 0.55) * fr * 0.4 : vec3(0.0))) * rim_glow;
 	if (caus_amt > 0.0) {
 		vec3 cl = texture(caus_tex, SCREEN_UV + NORMAL.xy * 0.01).rgb;
 		float up = clamp(NORMAL.z, 0.0, 1.0);
-		EMISSION += (ALBEDO * 0.7 + 0.3) * max(cl - 0.08, vec3(0.0)) * 1.6 * caus_amt * up;
+		EMISSION += (ALBEDO * 0.7 + 0.3) * min(max(cl - 0.08, vec3(0.0)), vec3(caus_cap)) * 1.6 * caus_amt * up * (kind < 0.5 ? veil_light : 1.0);
 	}
 }
