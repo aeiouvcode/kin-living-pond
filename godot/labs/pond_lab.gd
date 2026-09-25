@@ -6,9 +6,9 @@ extends "res://labs/fish_lab.gd"
 ## Tap: a food pellet lands, rings spread, the nearest fish comes to eat.
 
 const FLOOR_DROP = 1.3
-const GAP_SOFT = 1.5 # steer away inside this distance (centre lines; veils are ~0.3 wide each side)
-const GAP_HARD = 0.75 # centre lines never closer than this, so veils do not overlap
-const GAP_FEED = 0.5 # at a pellet the veils may brush, never cross
+const GAP_SOFT = 1.65 # start easing apart before the wide veil lobes can meet
+const GAP_HARD = 0.9 # centre-line guard gives the veils room to flutter on turns
+const GAP_FEED = 0.72 # feeding still gets a narrow right of way, not a veil collision
 const HEAD_L = 0.45 # nose ahead of the fish origin
 const TAIL_L = 1.3 # veil tip behind it
 const FISH_S = 0.9 # floor sits this far below the fish (for shadow offset)
@@ -70,10 +70,12 @@ func _ready() -> void:
 		if k == "ryukin":
 			for c in f.get_children():
 				if c is MeshInstance3D and c.material_override is ShaderMaterial and c.material_override.shader == BodyShader:
+					c.material_override.set_shader_parameter("base_col", Color(0.84, 0.64, 0.62))
+					c.material_override.set_shader_parameter("backlight_strength", 0.25)
 					c.material_override.set_shader_parameter("patch_col", Color(1.0, 0.66, 0.56)) # white-peach sarasa, not orange
 		add_child(f)
 		fish.append(f)
-		var p = Vector3(rng2.randf_range(-0.5, 0.5) * half.x, depth_y, rng2.randf_range(-0.4, 0.4) * half.y + (0.9 if k == "demekin" else -0.9))
+		var p = Vector3(rng2.randf_range(-0.5, 0.5) * half.x + (0.24 if k == "demekin" else 0.0), depth_y, rng2.randf_range(-0.4, 0.4) * half.y + (0.9 if k == "demekin" else -0.9))
 		agents.append({"node": f, "pos": p, "head": rng2.randf_range(0, TAU), "turn": 0.0, "speed": 0.32, "tf": rng2.randf() * 5.0, "target": p, "retarget": 0.0, "rise": 0.0, "kind": k})
 	_apply_knobs()
 
@@ -179,7 +181,7 @@ func _process(dt: float) -> void:
 						_pick_target(a)
 						a.yield_cd = 4.0
 		# soft walls
-		var m = Vector2(half.x - 0.7, half.y - 0.8)
+		var m = Vector2(half.x - 1.0, half.y - 0.8)
 		if p.x > m.x: want.x -= (p.x - m.x) * 4.0
 		if p.x < -m.x: want.x += (-m.x - p.x) * 4.0
 		if p.z > m.y: want.z -= (p.z - m.y) * 4.0
@@ -305,8 +307,15 @@ func _shadows() -> void:
 				if c.material_override is ShaderMaterial:
 					c.material_override.set_shader_parameter("caus_tex", ct)
 					c.material_override.set_shader_parameter("caus_amt", (0.9 if c.material_override.shader == BodyShader else 0.25) * settings.caus)
+					if c.material_override.shader == BodyShader:
+						c.material_override.set_shader_parameter("caus_cap", 0.55)
 					if c.material_override.shader != BodyShader:
-						c.material_override.set_shader_parameter("veil_far", Color(1.0, 0.87, 0.82)) # warm peach tips, not milk
+						c.material_override.set_shader_parameter("veil_far", Color(0.97, 0.77, 0.72)) # veil stays peach against the pale sand
+						c.material_override.set_shader_parameter("veil_root", Color(0.94, 0.67, 0.62))
+						c.material_override.set_shader_parameter("veil_light", 0.55) # avoid backlight + caustic stacking at the base
+						c.material_override.set_shader_parameter("veil_blend", 0.55)
+						c.material_override.set_shader_parameter("veil_coverage", 1.0)
+						c.material_override.set_shader_parameter("caus_cap", 0.42)
 	if not water or not water.mat:
 		return
 	var vsz = get_viewport().get_visible_rect().size
