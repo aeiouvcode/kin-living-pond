@@ -9,6 +9,7 @@ TWO WORKSTREAMS (Naksh, Sep 24 2:36-2:40 PM): fish design and fluid are built se
 - Cycle 23 (fish): compressed ryukin body with dorsal ridge and tapered snout, full fan side fins. Next fish turn: veil overlap layering, fish defocus, softer demekin sockets.
 - Cycle 24 (fluid): stone-slice bug fixed, caustic soft knee + fold fade, depth slope (--slope), softer canopy. Next fluid turn: denser desktop caustic grid, canopy structure, settings panel + export frame cost.
 - Pond Next (overnight Sep 25): `-- --lab=pond` (labs/pond_lab.gd) puts the lab fish over the water lab: water canvas behind a transparent 3D layer, surface glints drawn over the fish, soft fish shadows on the floor, tap drops food, fish kiss the surface. GPU ripple sim (`--gpu=0` for the CPU path), `--perf=1` timings, `--autotap=1` QA taps. Web build: `sh build.sh "Web Next"` -> godot/export_next/ (branch-only, not live).
+- Cycle 25 (fish): warm peach veil tips in the pond (fin shader `veil_far`). Next fluid turn (c26): canopy structure, veil-base brightness check in the pond.
 - Backlog (Sep 24 7:03 PM, Naksh said "Cool" to "Listen to the waves"): water motion as score - a coarse grid of ripple crests from the water lab drives a soft ambient synth (AudioStreamGenerator, local only), so the sound always comes from the scene.
 - Bowl/pond scenes stay as they are until both labs are strong. Nothing live without a new go.
 
