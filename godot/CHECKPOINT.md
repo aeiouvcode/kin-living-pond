@@ -1,5 +1,13 @@
 # Checkpoint
 
+- 2026-09-25 05:52 IST, cycle 25: fish turn - warm veil tips in the pond.
+  - The ryukin veil read milky white over the pale floor (overnight worse-list #2). Fin shader has a new `veil_far` colour (the tone the pale veil fades to at its tips); the pond sets it to warm peach, the solo fish lab keeps white. With the lighter light net on veils (03:17) the veil now reads as a peach-tinted sheet over the stones on desktop and phone.
+- Still worse, in order:
+  1. Real-GPU frame rate unmeasured (needs one look on a phone).
+  2. Veil base still bright where fresnel and the backlight stack; tips can brush on tight turns.
+  3. Canopy reflection is pink stains with no tree structure.
+  4. No on-screen settings panel in the pond.
+
 - OVERNIGHT (Sep 25, from 00:35 IST) - Pond Next, the one deep piece for the 7 AM delivery (parent relay of user directive 00:34: serious, QA-verified, live-ready; report by 06:45).
   - Done: `-- --lab=pond` (labs/pond_lab.gd, extends fish_lab.gd). Water canvas as 3D background (BG_CANVAS, layer -1, linear tonemap so the water keeps its colour), solo-tested ryukin + demekin from overhead, wander/separation/soft-wall steering with banking and fin bend from turn rate, surface kisses with rings, tap = food pellet that sinks, nearest fish eats it (ring + rise). Surface pass (water_lab/surface.gdshader) drawn over the fish: glints, blossom/sky reflection, faint water veil, so fish sit under the water. Soft fish shadows on the floor (body + veil), which also block the light net. Ryukin patch colour white-peach in the pond.
   - 00:45-00:59: food verified with scripted taps (`--autotap=1`: pellets land, nearest fish swims over and eats, ring + rise). Desktop framing (landscape keeps the height, camera higher). "Web Next" export preset (feature tag kin_next, root.gd starts the pond; `sh build.sh "Web Next"` -> godot/export_next/, gitignored, CSP added). Browser QA in headless Chromium (swiftshader) at 390x844 and 1280x800: loads, console clean (3 engine info lines), 0 external requests, tap feeds. Ripple sim moved to the GPU (labs/water_lab/ripple_sim.gdshader, ping-pong RGBA16F SubViewports, drops as uniforms): water script time 6.0 ms -> 0.04 ms per frame natively (wasm would be ~3x the CPU figure). `--gpu=0` keeps the CPU path. `--perf=1` prints script timings.
