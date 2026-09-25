@@ -79,3 +79,36 @@ vec2 p_to_uv_delta(vec2 dp) {
 	float sc = grid.x / 96.0;
 	return vec2(dp.x, dp.y * grid.x / grid.y) / (0.5 * sc);
 }
+
+// One reflected canopy for the floor and the over-fish surface. Broad, soft
+// forks read as a tree at phone size; leaf masses mask their ends. No thin
+// high-contrast lines that would look like scratches on the water.
+float canopy_noise(vec2 p) {
+ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+ float a = fract(sin(dot(i, vec2(127.1,311.7)))*43758.5453);
+ float b = fract(sin(dot(i+vec2(1.,0.), vec2(127.1,311.7)))*43758.5453);
+ float c = fract(sin(dot(i+vec2(0.,1.), vec2(127.1,311.7)))*43758.5453);
+ float d = fract(sin(dot(i+vec2(1.,1.), vec2(127.1,311.7)))*43758.5453);
+ return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+}
+float canopy_segment(vec2 p, vec2 a, vec2 b, float width) {
+ vec2 v = b-a;
+ float t = clamp(dot(p-a,v)/dot(v,v),0.0,1.0);
+ return 1.0-smoothstep(width-0.015,width+0.035,length(p-a-v*t));
+}
+void canopy_sky(vec2 rp, out vec3 sky, out float mass, out float bough) {
+ sky = mix(vec3(0.98,0.93,0.88), vec3(0.8,0.84,0.98), clamp(rp.y*0.4,0.0,1.0));
+ // A trunk and two softened forks enter from the left, behind the flower clusters.
+ float tree = max(canopy_segment(rp,vec2(-0.20,1.9),vec2(0.30,0.80),0.105),
+                  canopy_segment(rp,vec2(0.16,1.13),vec2(0.62,0.36),0.08));
+ tree = max(tree,canopy_segment(rp,vec2(0.20,1.05),vec2(0.48,1.65),0.075));
+ tree = max(tree,canopy_segment(rp,vec2(0.42,0.69),vec2(0.68,0.82),0.06));
+ float edge = smoothstep(0.83,0.10,rp.x+0.09*sin(rp.y*7.0)+0.05*sin(rp.y*17.0+1.3));
+ float leaf = canopy_noise(rp*7.0)*0.65+canopy_noise(rp*17.0+3.0)*0.35;
+ mass = edge*smoothstep(0.37,0.66,leaf);
+ bough = tree*edge;
+ // Pale blossom masses, small muted branch hint. Keep open sky between boughs.
+ sky = mix(sky,vec3(0.48,0.37,0.32),bough*0.66);
+ vec3 petals = mix(vec3(0.94,0.68,0.67),vec3(1.0,0.85,0.81),canopy_noise(rp*48.0));
+ sky = mix(sky,petals,mass*0.59*(1.0-bough*0.7));
+}
