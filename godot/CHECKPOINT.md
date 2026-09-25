@@ -1,5 +1,114 @@
 # Checkpoint
 
+- 2026-09-25 19:00 IST, cycle 38: fluid turn - avoid muddy canopy.
+  - Hard critique: canopy still reads as haze, not a tree. Tested stronger branch weight and lower leaf coverage, then three separate blossom clusters attached to the forks. The solo water render became a flat, dark stencil, and Pond Next darkened a swath beneath the peach veil. Reverted that model. Kept only a modest reduction in shared bough and blossom colour weight (0.72/0.66 to 0.66/0.59). Solo water at 390x844 and Pond Next at 390x844 and 1280x800 visually checked, no shader errors. This does not solve tree legibility; it merely reduces the muddy cast.
+  - Worse-list: reflected tree needs a spatial composition redesign; narrow white ryukin stripe remains; actual fin intersections and real-device GPU cost unmeasured; Pond Next settings panel absent.
+  - Security A- for arithmetic-only shader constants: clean diff, no network, secrets, telemetry, persistence, or new input. Browser/export checks not repeated; main/live untouched.
+  - Branch sync parked under parent's no-browser direction until local midnight; c26-c38 local only.
+  - Web-surface audit following parent checklist: `build.sh` now reapplies title/description, generated favicon and CSP after replacing raw engine error text with a short, safe failure notice; copies `404.html` into the export. Local Web Next run succeeded at 390x844 and 1280x800 with no page errors, screenshots inspected. Forced 503 on index.pck showed the friendly failure notice and no injected secret/path in page text. Static localhost serves a generic 404, so nested hosted 404 behavior remains unverified. Legacy root index.html still lacks favicon/description and controlled WebGL failure UI; tracked in FEATURE-MAP.md rather than claimed fixed.
+
+- 2026-09-25 18:00 IST, cycle 37: fish turn - restore peach ryukin body form.
+  - Hard critique: four earlier light-net passes left a white body stripe, so I rendered the same deterministic phone frame with fish caustics off, specular off, and backlight off. Neither caustics nor specular removed the stripe; backlight changed the bright region. A warmer pond-only body base (0.84, 0.64, 0.62) and lower ryukin backlight (0.25 of solo value) now make a peach body with stronger form at phone size. The 390x844 debug solo keeps the old defaults; Pond Next 390x844 and 1280x800 rendered without shader errors. Controlled before/after phone frames show the change. A narrow white line remains, so this is a clear improvement, not full elimination.
+  - Highest-level fix: body shader exposes base color and backlight strength as material parameters; Pond Next configures the look, rather than changing shared shader constants or layering another caustic cap. `FEATURE-MAP.md` added at repo root to map routes and triggers under Naksh's new guidance.
+  - Worse-list: remaining bright stripe on ryukin; canopy still looks like haze; actual fin-mesh intersections and real-device GPU cost unmeasured; no Pond Next settings panel.
+  - Security A- for local material parameters and documentation: clean diff; no new network, secrets, telemetry, persistence, third-party loads, or input sinks. Browser/export QA not repeated. Main/live unchanged.
+  - Browser push paused under parent's no-browser instruction until local midnight; c26-c37 local only.
+
+- 2026-09-25 16:57 IST, cycle 36: fluid turn - quieter floor light net.
+  - Hard critique: the caustic folds were still the main pattern, swallowing the softer canopy and peach veil. Tried raising the branch reflection weight in solo water from 0.42 to 0.68, but the phone render became a broad muddy band, not an identifiable tree; reverted that experiment. Kept a quieter floor pass: diffuse caustic multiplier 0.22 to 0.18, base 0.74 to 0.77, and additive cusp 0.055 to 0.04. Solo water and integrated Pond Next at 390x844 and 1280x800 rendered and visually checked. Net stays visible but is a little less dominant; the persistent bright patch on the ryukin body is unchanged, so c35's cap did not address its source. No shader errors.
+  - Worse-list: (1) white ryukin body patch, likely separate lighting path, needs controlled component test; (2) canopy still reads as haze, not tree; (3) fin mesh intersections not measured; (4) real-phone GPU cost and pond settings panel still open.
+  - Security A- for a local shader-only arithmetic change: diff check clean; no new network, input, storage, telemetry, scripts, or secrets. Browser/export security and real phone performance not tested this cycle. Main/live untouched.
+  - Branch push parked: parent barred browser sessions until local midnight after budget exhaustion; c26-c36 local only.
+
+- 2026-09-25 14:56 IST, cycle 34: fluid turn - less bruised canopy reflection.
+  - Hard critique: c28's darker branch colour made the left of the pond look like a mauve shadow rather than a reflected tree. Shifted branches toward warm brown and lowered their weight, with blossoms more coral than purple. Rendered solo water and Pond Next at 390x844 and 1280x800; the left reads warmer and the demekin less stained. This is a small colour correction, not a solved tree silhouette; caustics remain the main visual pattern. No shader errors.
+  - Security A: procedural shader colour constants only, no new network, secrets, telemetry, persistence, file I/O, input sink, or bridge. Real-phone GPU FPS unknown. Main/live unchanged.
+  - Browser budget exhausted until Naksh local midnight, no push. c26-c34 local only.
+- Still worse, in order:
+  1. Real phone GPU frame rate unknown.
+  2. Fin-mesh collisions unmeasured and white-hot fish body patches persist.
+  3. Canopy still not an unmistakable tree at phone size.
+  4. No pond settings panel.
+
+- 2026-09-25 13:55 IST, cycle 33: fish turn - cap caustic emission on translucent fins.
+  - Hard critique: floor hot knots were softened in c32, but the fish fin shader still sampled the raw light-net texture and could flare white independently. Added a pond-only cap to that fin emission, leaving the body and solo-fish defaults unchanged. Ryukin debug stage and Pond Next rendered and visually checked at 390x844 and 1280x800. The veil stays peach across the sampled frames; bright caustic wash is reduced, but the overhead body still has white-hot patches and there is no pixel-perfect proof for every swimming angle. No shader errors.
+  - Security A: bounded shader uniform and one material value, no new network, secrets, telemetry, persistence, file I/O, input sink, or bridge. Actual phone GPU FPS and fin-mesh collisions remain unmeasured. Main/live untouched.
+  - Browser budget exhausted until Naksh local midnight, so no push. c26-c33 local only.
+- Still worse, in order:
+  1. Real-phone GPU frame rate unmeasured.
+  2. Fin-mesh collisions unmeasured; ryukin body white-hot patches persist.
+  3. Canopy reads as mauve shadow at phone size.
+  4. No pond settings panel.
+
+- 2026-09-25 12:55 IST, cycle 32: fluid turn - soften caustic blowout.
+  - Hard critique: the brightest fold knots still compete with the ryukin's peach veil, especially on desktop. Reduced the floor light-net term (0.24 to 0.22), capped its contribution at 2.15 rather than 2.5, and trimmed additive cusp and bloom energy. Rendered water solo and Pond Next at 390x844 and 1280x800. The caustic lattice remains visible, but hot knots are less stark; the change is modest and does not eliminate white spots under the fish. No shader errors.
+  - Security A: shader arithmetic constants only; no new external requests, secrets, persistence, telemetry, file I/O, input sink, or bridge. Real-device GPU FPS unknown. Main/live untouched.
+  - Browser daily budget exhausted; no push attempted. c26-c32 local only.
+- Still worse, in order:
+  1. Real-phone GPU frame rate unmeasured.
+  2. True fin-mesh collision and veil over brightest caustics unverified.
+  3. Canopy still reads as a mauve shadow on phone.
+  4. No pond settings panel.
+
+- 2026-09-25 11:55 IST, cycle 31: fish turn - safer space for veil tips.
+  - Hard critique: centerline clearance was based on a 0.75 hard gap even though each fluttering veil can extend about 0.3 sideways; tight turns might brush. Increased soft/hard/feeding gaps to 1.65/0.9/0.72, preserving right of way but giving both fins margin. In 90 simulated seconds at phone and desktop sizes, sampled closest centerline gaps were 0.877 and 0.875 respectively (2-second reporting windows), up from the old reported 0.73; both test pellets were eaten within about 7 seconds. Solo ryukin debug and Pond Next renders at 390x844 and 1280x800 were inspected. No visible crossing in sampled frames, but the test samples centerlines, not cloth geometry, so a true tip collision guarantee is not proven.
+  - Security A: numeric steering constants only, no new network, secrets, telemetry, persistence, file I/O, input sink, or bridge. Real phone GPU FPS remains unmeasured. Main/live untouched.
+  - Parent says browser daily budget exhausted until Naksh local midnight; no push attempted. c26-c31 local only.
+- Still worse, in order:
+  1. Real-device GPU frame rate unmeasured.
+  2. True fin-mesh intersection not measured; bright caustic can wash the peach veil.
+  3. Canopy shadow is still impressionistic rather than a tree on phone.
+  4. No pond settings panel.
+
+- 2026-09-25 10:54 IST, cycle 30: fluid turn - keep the black fish clear beneath the canopy.
+  - Hard critique: c28's stronger reflected boughs helped the solo water but painted a mauve shadow through the demekin. Reduced only the over-fish surface bough coefficient from 0.45 to 0.13 (blossom from 0.30 to 0.26); left the floor reflection intact. Rendered water alone and Pond Next at 390x844 and 1280x800; the demekin reads darker, the tree still shows on the floor. The reflection is still an impressionistic mauve band, not a clearly readable tree at phone size, and caustics still dominate. No shader errors.
+  - Security A: shader constant changes only; no network, secrets, persistence, telemetry, file I/O, JS bridge, or input sink. Real GPU FPS not measured. Main/live untouched.
+  - Cloud-browser daily budget exhausted; parent directed no sessions until local midnight. c26-c30 remain local only, no push attempted.
+- Still worse, in order:
+  1. Real-device GPU frame rate unmeasured.
+  2. Tight-turn veil-tip brushes and occasional pale-caustic wash.
+  3. Canopy reads as mauve shadow, not tree, on phone.
+  4. No pond settings panel.
+
+- 2026-09-25 09:53 IST, cycle 29: fish turn - tip coverage over pale stones.
+  - Hard critique: after c27's warm colour, the veil tip still faded too transparent over pale pebbles. Added a pond-only coverage uniform that lifts the tip alpha taper from 0.45 to 0.70; solo model defaults remain unchanged. Tested ryukin alone on the debug stage and Pond Next at 390x844 and 1280x800. The veil reads as a sheet against stones without becoming opaque; it still loses contrast where a very bright caustic crosses. Tip brushes on tight turns are not solved by this visual pass. No shader errors.
+  - Security A: one bounded shader uniform and material value, no external request, secret, input sink, telemetry, persistence, JS bridge, or file I/O. Software llvmpipe renders do not give real-phone FPS. Main/live untouched.
+  - Push remains blocked: GitHub Mobile device verification timed out. The lease was released; parent will coordinate a fresh login if Naksh is ready. c26-c29 local only.
+- Still worse, in order:
+  1. Real-phone GPU frame rate unmeasured.
+  2. Tip brushes on tight turns; bright caustics still flatten the ryukin veil in places.
+  3. Canopy can read as a mauve shadow and darken the black fish.
+  4. No on-screen pond settings panel.
+
+- 2026-09-25 08:56 IST, cycle 28: fluid turn - canopy branch visibility.
+  - Hard critique: the c26 canopy was still pink haze on the phone. Its softened forks needed their own reflection weight instead of borrowing the sparse blossom mask. The shared shader now exposes bough coverage separately; the floor and over-fish surface reflect it even through gaps in the blossoms. Thickened the forks and muted their colour rather than making scratch-like dark hairlines. Rendered solo water and Pond Next, including 390x844 phone and 1280x800 desktop. The stronger final phone render gives a mauve forked band to the left, but it remains impressionistic and can darken the demekin side; the high caustic contrast still leads the image. No shader errors.
+  - Security A: procedural shader functions only, no network, telemetry, persistence, new input sinks, file I/O, secrets, or bridges. Real GPU FPS remains unknown. Main/live unchanged.
+  - Push blocker: config-c loaded GitHub signed out; stopped before any edit and reported to parent. c26-c28 are local only.
+- Still worse, in order:
+  1. Real phone GPU frame rate unknown.
+  2. Ryukin veil translucency over pale stones and tight-turn tip brushes.
+  3. Canopy still reads as a mauve shadow more than an obvious tree; stronger reflection can darken black fish.
+  4. No on-screen pond settings panel.
+
+- 2026-09-25 07:54 IST, cycle 27: fish turn - ryukin veil contrast in Pond Next.
+  - Hard critique: the ryukin's veil base looked white-hot against the floor, while its peach tips disappeared over pale stones. Added pond-only root/tip colour and reduced backlight plus light-net strength on the veil; the solo fish keeps its previous defaults. Checked ryukin solo on the debug stage and Pond Next at 390x844 and 1280x800. The veil reads as a warmer, more continuous sheet, though pale stones still show through it and a caustic can flatten its edge. No shader errors.
+  - Security A: local shader uniforms and material parameters only; no network, persistence, telemetry, secrets, file I/O, new input sink, or JS bridge. Main/live unchanged. The software rasterizer does not measure actual phone GPU FPS.
+  - Push state: c26 d1fddeb and this c27 pass are local only. The signed-in browser lease was acquired but the old push helper ignored the lease ID; it was fixed outside the repo, no browser edit occurred, and parent asked for retry next cycle rather than hammering it.
+- Still worse, in order:
+  1. Real-phone GPU frame rate is unknown.
+  2. Ryukin veil still too translucent on pale stones; tight-turn tip brushes remain possible.
+  3. Canopy tree is subtle at phone size, settings panel absent in the pond.
+
+- 2026-09-25 06:54 IST, cycle 26: fluid turn - a shared reflected canopy shape.
+  - Hard critique: the pond reads as luminous pebbles and caustic web first; the blossom reflection was pink stains with no branch silhouette. Added a softened fork/trunk and broad leaf masses in a shared shader function, sampled by both bare water and the over-fish pass. Solo water and integrated Pond Next rendered. The branch remains subtle in the integrated composition, intentionally behind the fish, not a black hair-like line.
+  - Phone 390x844 and desktop 1280x800 render checks passed, but the ryukin base is still bright against caustics and at some angles its veil dissolves into pale stones. The branch is still too weak to read as a tree at phone size. No shader errors. llvmpipe movie GPU timings are software rendering, not real-device FPS.
+  - Security A: shader-only procedural arithmetic and shared include, no new endpoints, persistence, secrets, script bridges, third-party loads, or input sinks. Main and live untouched.
+- Still worse, in order:
+  1. Real-GPU frame rate unmeasured (needs phone hardware).
+  2. Veil base stacks with backlight/caustics and tips can brush on tight turns.
+  3. Canopy branches still too subtle in Pond Next at phone size; improve without making them look like scratches.
+  4. No on-screen settings panel in the pond.
+
 - 2026-09-25 05:52 IST, cycle 25: fish turn - warm veil tips in the pond.
   - The ryukin veil read milky white over the pale floor (overnight worse-list #2). Fin shader has a new `veil_far` colour (the tone the pale veil fades to at its tips); the pond sets it to warm peach, the solo fish lab keeps white. With the lighter light net on veils (03:17) the veil now reads as a peach-tinted sheet over the stones on desktop and phone.
 - Still worse, in order:
@@ -254,3 +363,38 @@
   4. The naming card covers the bottom of the bowl on phone, and fish often swim under it.
   5. Desktop bowl sits small in the frame; reference is a close macro.
 - Live /godot/ is still the cycle 2 koi pond (cb9b55f). Replacing it needs a new owner go.
+
+- 2026-09-25 15:56 IST, cycle 35 (fish): body caustic cap, local only.
+  - Fish body shader gains a default-neutral `caus_cap=8`; Pond Next sets 0.55, analogous to the veil cap. Solo ryukin remains on its default.
+  - Solo debug ryukin at 390x844 and integrated Pond Next at 390x844 and 1280x800 rendered without shader errors. Side-by-side with c34: bright patch on peach body is still plainly present. This caps raw caustic spikes but does not solve body glare; specular or reflected light needs separate diagnosis.
+  - Worse-list: (1) peach body white patch and floor caustic knots still compete with the fish; (2) canopy still reads as haze, not a clear tree; (3) actual veil mesh collisions on tight turns unmeasured; (4) real-phone GPU frame cost unmeasured.
+  - Security grade A- for this local diff: shader cap and fixed in-scene parameter only; `git diff --check` clean; no new network, input, storage, telemetry, or secret handling. Runtime/export and browser security not retested this cycle.
+  - Branch sync parked due exhausted cloud-browser budget and parent direction; main and live unchanged.
+
+- 2026-09-25 20:02 IST, cycle 39 (fish), local candidate committed after inspection.
+  - Demekin tail: broadens the double-lobe mesh (spread 1.0 -> 1.2), lowers splay (58 -> 42 degrees), increases mesh subdivisions (26x28 -> 30x34) and inky shader alpha (1.5 -> 1.85); scallop was dialed back to 0.16 after the first version made sharp spikes.
+  - Integration: original fish scale restored after an enlarged trial clipped on phone; demekin spawns 0.24 pond units inward and the horizontal steering margin is 1.0 instead of 0.7. This is a soft wall, not a formal no-clip proof.
+  - Solo debug at 390x844 and Pond Next at 390x844 and 1280x800 ran without shader errors. Four phone frames across 0-2.3 s show the fan remains inside the frame. Its outline remains more smooth leaf than Hakozaki's dense black ruffle; not a match yet. No claim about all turns or mesh intersections.
+  - Worse-list: (1) demekin ruffled fabric silhouette and sharp upper tip; (2) ryukin residual pale stripe; (3) busy pebble/caustic floor and faint tree; (4) actual fin intersections and real-device GPU timing unmeasured.
+  - Security grade A- for this local diff: procedural mesh, shader alpha, and steering constants only. No network/storage/input surface or third-party assets added; runtime logs and diff checked. Browser/export security not retested this cycle. Main/live unchanged; branch sync parked under parent browser limit.
+
+- 2026-09-25 20:59 IST, cycle 40 (fluid): modest surface/floor hierarchy pass.
+  - Default pebble density lowered 0.55 -> 0.36; floor light-net diffuse 0.18 -> 0.13, highlight cap 1.0 -> 0.7 and multiplier 0.04 -> 0.035, bloom 0.08 -> 0.055. Surface glint layer was left unchanged. These settings affect the water lab and Pond Next, not the existing bowl or live /godot/.
+  - Inspected solo water at 390x844, Pond Next 390x844 and 1280x800, and four phone motion samples through 2.6 s; no shader errors. Before/after phone image shows calmer sand and some more open pockets, but pebbles still compete for attention and the reflected canopy remains indistinct. Grade: modest, not a reference match.
+  - Worse-list stays: demekin upper fan tip and ruffle; residual ryukin pale stripe; busy floor and faint tree; fin intersections and real-phone GPU timing unmeasured.
+  - Security grade A- for this local shader/default pass: no network, storage, user input, external assets or secrets; diff check clean. Browser/export security not retested here. Branch sync and /next/ deployment will wait until after midnight browser reset and the approved signed-in web route; /godot/ stays untouched.
+
+- 2026-09-25 21:59 IST, cycle 41 (fish): tested and reverted.
+  - Demekin scallop 0.16 -> 0.12 and fork 0.26 -> 0.12 in a candidate. Solo 390x844 and Pond Next 390x844/1280x800 rendered without shader errors. Before/after at phone size: upper tip slightly less pointy but fan read even more like a smooth leaf, not a dense ruffle. Reverted both values; no shipping visual change.
+  - Worse-list unchanged: demekin fan needs a structural ruffled silhouette with soft rounded tips, not just less scallop; ryukin pale stripe; floor/tree hierarchy; fin-mesh collisions and real-device GPU cost.
+  - Security grade A for resulting source (no code change); work records only. No browser or branch sync until reset; /godot/ unchanged.
+
+- 2026-09-25 22:59 IST, cycle 42 (fluid): bare sand test rejected.
+  - Set default floor to sand for solo water and Pond Next and rendered 390x844/1280x800. The pebble layer was indeed a distraction, but without it the caustic grid dominates every inch and the scene looks shallow, with a dull beige-green floor. Reverted floor default to pebble; the existing `--floor=sand` setting still permits it as an option.
+  - Worse-list: demekin fan tip/ruffle, ryukin pale stripe, floor/light net versus surface separation, fin intersections and real-device GPU cost. Need a structural light-net/surface treatment, not an empty floor.
+  - Security grade A for resulting source (no code change); records only. Browser/branch/deploy still pending local midnight budget reset; live /godot/ untouched.
+
+- 2026-09-26 01:00 IST, cycle 43 (fish): rejected edge-shape candidate.
+  - Tested a rounder lobe outline and five scallop cycles on the caudal sheet at solo 390x844 and Pond Next 390x844/1280x800; all ran without shader errors. Phone before/after showed teeth and detached-looking points, worse than the retained c39 leaf. Reverted code. The candidate also used a numerical seed threshold that would have affected ryukin, so it was unsuitable even if visually acceptable.
+  - Worse-list unchanged: soft dense demekin ruffle; ryukin pale stripe; floor/surface hierarchy; actual fin intersections and real-device GPU cost.
+  - Security grade A for resulting source, no code change. Browser session still blocked on the shared GitHub sign-in, and I did not initiate one; /godot/ remains untouched.
