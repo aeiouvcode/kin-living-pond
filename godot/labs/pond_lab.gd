@@ -305,6 +305,8 @@ func _shadows() -> void:
 				if c.material_override is ShaderMaterial:
 					c.material_override.set_shader_parameter("caus_tex", ct)
 					c.material_override.set_shader_parameter("caus_amt", (0.9 if c.material_override.shader == BodyShader else 0.25) * settings.caus)
+					if c.material_override.shader != BodyShader:
+						c.material_override.set_shader_parameter("veil_far", Color(1.0, 0.87, 0.82)) # warm peach tips, not milk
 	if not water or not water.mat:
 		return
 	var vsz = get_viewport().get_visible_rect().size
