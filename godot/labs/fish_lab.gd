@@ -217,10 +217,10 @@ func _build_fish(kind: String) -> Node3D:
 	# from above you see two big lobes; each cups and droops at the edges.
 	var tail_x = -0.62
 	for side in [-1.0, 1.0]:
-		var m = _fin_mesh(tl, 0.1, 1.0, 26, 28, 0.0, 0.0, true, 0.22, 0.22, 0.28, 0.28, 1.7 + side)
+		var m = _fin_mesh(tl, 0.1, 1.2 if kind == "demekin" else 1.0, 30, 34, 0.0, 0.0, true, 0.22, 0.16 if kind == "demekin" else 0.22, 0.26, 0.28, 1.7 + side)
 		var fm = _fin_mat(kind, tail_x, side * 1.3, Vector3(0, 0, 1), 0.85)
 		fm.set_shader_parameter("fork", 0.0) # the fork now lives in the mesh outline
-		_add_fin(root, m, fm, Vector3(tail_x + 0.03, -0.02, side * 0.015), Vector3(side * 58.0, side * 16.0, 0))
+		_add_fin(root, m, fm, Vector3(tail_x + 0.03, -0.02, side * 0.015), Vector3(side * (42.0 if kind == "demekin" else 58.0), side * 16.0, 0))
 	# Tall dorsal fin on the hump.
 	var dm = _fin_mesh(0.45 * settings.tail, 0.3, 0.24, 12, 14, 0.12, 0.0, true, 0.0, 0.16, 0.0, 0.35, 4.2)
 	_add_fin(root, dm, _fin_mat(kind, -0.05, 0.4, Vector3(0, 0, 1), 0.8), Vector3(0.02, 0.36 if kind == "ryukin" else 0.26, 0), Vector3(0, 0, -28))
