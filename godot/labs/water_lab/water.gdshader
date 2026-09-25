@@ -13,7 +13,7 @@ uniform float warm = 1.0;
 uniform float bloom = 1.0;
 uniform float refl = 1.0;
 uniform float crisp = 1.0;
-uniform float density = 0.55;
+uniform float density = 0.36;
 uniform float slope = 1.0;
 // Pond Next: soft fish shadows on the floor. xy = screen uv, z = body length
 // (fraction of screen width), w = heading angle in screen space.
@@ -153,7 +153,7 @@ void fragment() {
 	cl *= 1.0 - shade;
 	glow *= 1.0 - shade;
 	base *= 1.0 - 0.5 * shade;
-	vec3 col = base * (0.72 + 0.24 * min(caus, vec3(2.5)) * sun) + sun * cl * 0.08 + sun * glow * 0.1 * bloom;
+	vec3 col = base * (0.77 + 0.13 * min(caus, vec3(2.15)) * sun) + sun * min(cl, vec3(0.7)) * 0.035 + sun * glow * 0.055 * bloom;
 
 	// depth tint and a soft vignette
 	vec2 cuv = uv - 0.5;
@@ -174,17 +174,10 @@ void fragment() {
 	// seen in the reflected ray so it wobbles with every ripple
 	vec3 R = reflect(vec3(0.0, 0.0, -1.0), n);
 	vec2 rp = uv * vec2(1.0, grid.y / grid.x) + R.xy * 0.9;
-	float canopy = smoothstep(0.62, 0.05, rp.x + 0.12 * sin(rp.y * 9.0) + 0.06 * sin(rp.y * 23.0 + 1.3));
-	vec3 sky = mix(vec3(0.98, 0.93, 0.88), vec3(0.8, 0.84, 0.98), clamp(rp.y * 0.4, 0.0, 1.0));
-	// canopy is clusters of blossom with bright sky showing through the gaps
-	float leaf = vnz(rp * 9.0) * 0.75 + vnz(rp * 21.0 + 3.0) * 0.25; // soft: reflections are out of focus
-	float gaps = smoothstep(0.34, 0.74, leaf);
-
-	float cmask = canopy * gaps;
-	vec3 bloss = mix(vec3(0.93, 0.62, 0.72), vec3(1.0, 0.82, 0.86), vnz(rp * 60.0));
-	sky = mix(sky * (1.0 + 0.15 * canopy), bloss, cmask * 0.75);
+	vec3 sky; float cmask; float bough;
+	canopy_sky(rp, sky, cmask, bough);
 	float fres = min(0.02 + 0.98 * pow(1.0 - n.z, 5.0), 0.3); // capped: steep fresh drop rings were flat cream sheets
-	col = mix(col, sky, clamp(fres + 0.05 + 0.4 * cmask + 0.1 * canopy, 0.0, 1.0) * refl);
+	col = mix(col, sky, clamp(fres + 0.05 + 0.47 * cmask + 0.42 * bough, 0.0, 1.0) * refl);
 
 	col = col / (1.0 + max(col - 0.85, vec3(0.0)) * 0.9); // soft shoulder, no blowout
 	COLOR = vec4(col, 1.0);
