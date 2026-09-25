@@ -7,6 +7,8 @@ uniform float kind = 0.0;
 // dappled light that crosses the floor also slides over the fish
 uniform sampler2D caus_tex : source_color, filter_linear, repeat_disable;
 uniform float caus_amt = 0.0;
+// colour the pale veil fades to at its tips (pond warms it so it does not read milky)
+uniform vec3 veil_far : source_color = vec3(0.99, 0.98, 1.0);
 uniform float time_s = 0.0;
 uniform float swim = 1.0;
 uniform float bend = 0.0;
@@ -55,7 +57,7 @@ void fragment() {
 	float a = opacity * edge * mix(1.0, 0.45, u) * rays;
 	vec3 col;
 	if (kind < 0.5) {
-		col = mix(vec3(1.0, 0.82, 0.76), vec3(0.99, 0.98, 1.0), smoothstep(0.0, 0.35, u));
+		col = mix(vec3(1.0, 0.82, 0.76), veil_far, smoothstep(0.0, 0.35, u));
 	} else {
 		col = mix(vec3(0.02, 0.02, 0.03), vec3(0.05, 0.06, 0.12), u);
 		a = min(0.97, a * 1.5);
