@@ -7,12 +7,15 @@ uniform float kind = 0.0;
 // dappled light that crosses the floor also slides over the fish
 uniform sampler2D caus_tex : source_color, filter_linear, repeat_disable;
 uniform float caus_amt = 0.0;
+uniform float caus_cap = 8.0; // pond-only cap on high-energy light knots
 uniform float time_s = 0.0;
 uniform float swim = 1.0;
 uniform float bend = 0.0;
 uniform float body_len = 1.0;
 uniform float rim_glow = 1.0;
 uniform vec3 patch_col : source_color = vec3(0.98, 0.55, 0.42);
+uniform vec3 base_col : source_color = vec3(0.93, 0.88, 0.85);
+uniform float backlight_strength = 1.0;
 
 float h21(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 float vn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
@@ -41,7 +44,7 @@ void fragment() {
 	sp.y += floor(sp.x) * 0.5;
 	float scale = smoothstep(0.35, 0.5, length(fract(sp) - 0.5));
 	if (kind < 0.5) {
-		vec3 base = vec3(0.93, 0.88, 0.85);
+		vec3 base = base_col;
 		float pn = vn(vec2(uv.x * 4.0, uv.y * 3.0) + 11.0) + 0.5 * vn(vec2(uv.x * 9.0, uv.y * 7.0));
 		float top = smoothstep(0.35, 0.0, abs(uv.y - 0.25));
 		float patchm = smoothstep(0.75, 0.95, pn + top * 0.35) * smoothstep(0.08, 0.2, uv.x);
@@ -70,10 +73,10 @@ void fragment() {
 	vec3 rimc = kind < 0.5 ? vec3(1.0, 0.86, 0.84) : vec3(0.35, 0.45, 0.85);
 	float velvet = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.6);
 	EMISSION = (kind < 0.5 ? rimc * fr * 0.2 : vec3(0.2, 0.21, 0.42) * velvet * 0.8 + rimc * fr * 0.15) * rim_glow;
-	BACKLIGHT = kind < 0.5 ? vec3(0.5, 0.25, 0.2) : vec3(0.0);
+	BACKLIGHT = kind < 0.5 ? vec3(0.5, 0.25, 0.2) * backlight_strength : vec3(0.0);
 	if (caus_amt > 0.0) {
 		vec3 cl = texture(caus_tex, SCREEN_UV + NORMAL.xy * 0.01).rgb;
 		float up = clamp(NORMAL.z, 0.0, 1.0);
-		EMISSION += (ALBEDO * 0.7 + 0.3) * max(cl - 0.08, vec3(0.0)) * 1.6 * caus_amt * up;
+		EMISSION += (ALBEDO * 0.7 + 0.3) * min(max(cl - 0.08, vec3(0.0)), vec3(caus_cap)) * 1.6 * caus_amt * up;
 	}
 }
