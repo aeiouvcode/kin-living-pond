@@ -26,6 +26,7 @@ uniform float alpha_min = 0.0;
 uniform float alpha_fresnel = 0.0;
 uniform float rim_glow = 1.0;
 uniform float pleat = 1.0;
+uniform float tail_ruffle = 0.0; // demekin caudal sheets only
 uniform float root_x = 0.0;
 uniform float fork = 0.0;
 uniform vec3 wave_axis = vec3(0.0, 0.0, 1.0);
@@ -49,7 +50,7 @@ void vertex() {
 	VERTEX.z += base * (1.0 + u * 0.8);
 	VERTEX += wave_axis * cloth * body_len;
 	// pleats: the veil folds along its rays, growing toward the tip
-	VERTEX += NORMAL * sin(UV.y * 26.0 + phase) * 0.016 * u * pleat * body_len;
+	VERTEX += NORMAL * sin(UV.y * mix(26.0, 42.0, tail_ruffle) + phase) * mix(0.016, 0.022, tail_ruffle) * u * pleat * body_len;
 }
 
 void fragment() {
@@ -74,7 +75,7 @@ void fragment() {
 	float rim_band = edge * smoothstep(0.55, 0.95, u + abs(v - 0.5) * 0.9);
 	a = clamp(max(a + fr * alpha_fresnel * rim_band, alpha_min * edge), 0.0, 1.0);
 	// folds: the far side of each pleat reads darker, like stacked layers
-	float fold = 0.5 + 0.5 * cos(v * 26.0 + phase);
+	float fold = 0.5 + 0.5 * cos(v * mix(26.0, 42.0, tail_ruffle) + phase);
 	col *= mix(1.0, 0.78 + 0.22 * fold, pleat * smoothstep(0.1, 0.6, u));
 	a = min(1.0, a * mix(1.0, 0.85 + 0.35 * (1.0 - fold), pleat * u));
 	ALBEDO = col * rays;
