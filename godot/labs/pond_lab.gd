@@ -12,6 +12,7 @@ const GAP_FEED = 0.72 # feeding still gets a narrow right of way, not a veil col
 const HEAD_L = 0.45 # nose ahead of the fish origin
 const TAIL_L = 1.3 # veil tip behind it
 const FISH_S = 0.9 # floor sits this far below the fish (for shadow offset)
+const FOOD_TTL = 40.0 # an unreachable pellet must not fill the six-slot cap forever
 var water: Node2D
 var caus_set := false
 var gap_min := 1e9
@@ -128,6 +129,8 @@ func _process(dt: float) -> void:
 		if int(t0 / 2.0) != int(t / 2.0):
 			print("GAP t=%.0f min=%.3f a=%s b=%s h=%.2f,%.2f half=%s" % [t, gap_min, agents[0].pos, agents[1].pos, agents[0].head, agents[1].head, half])
 			gap_min = 1e9
+	# Uneaten edge pellets cannot permanently consume the finite food slots.
+	_age_food(dt)
 	# food sinks slowly and drifts
 	for fd in food:
 		fd.node.position.y = maxf(fd.node.position.y - dt * 0.12, depth_y + 0.15)
@@ -212,10 +215,8 @@ func _process(dt: float) -> void:
 			var cp = _closest_pair(p, fwd, agents[j].pos, _fwd(agents[j]), 0.0)
 			var dv: Vector3 = cp[0] - cp[1]
 			dv.y = 0.0
-			var dl = dv.length()
 			var hard = GAP_FEED if (a.best < 1.2 or agents[j].get("best", 1e9) < 1.2) else GAP_HARD
-			if dl < hard and dl > 1e-4:
-				p += dv / dl * (hard - dl) * 0.5 # both fish do this, so the gap closes fully
+			p += _hard_gap_step(dv, hard, i, j)
 		# eat
 		for fd in food.duplicate():
 			var nose = p + fwd * 0.4
@@ -280,6 +281,14 @@ func _adapt(dt: float) -> void:
 	if settings.perf > 0.0:
 		print("ADAPT level=%d fps=%.1f" % [adapt_level, fps])
 
+func _hard_gap_step(dv: Vector3, hard: float, i: int, j: int) -> Vector3:
+	var dl = Vector2(dv.x, dv.z).length()
+	if dl >= hard:
+		return Vector3.ZERO
+	# Exact coincidence has no normal; use stable opposite lateral directions.
+	var away = dv / dl if dl > 1e-4 else Vector3(0.0, 0.0, -1.0 if i < j else 1.0)
+	return away * (hard - dl) * 0.5
+
 func _fwd(a: Dictionary) -> Vector3:
 	return Vector3(cos(a.head), 0, -sin(a.head))
 
@@ -339,6 +348,13 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	_spawn_food(e.position)
 
+func _age_food(dt: float) -> void:
+	for fd in food.duplicate():
+		fd.age = fd.get("age", 0.0) + dt
+		if fd.age >= FOOD_TTL:
+			fd.node.queue_free()
+			food.erase(fd)
+
 func _spawn_food(sp: Vector2) -> void:
 	if food.size() >= 6:
 		return
@@ -358,4 +374,4 @@ func _spawn_food(sp: Vector2) -> void:
 	mi.material_override = m
 	mi.position = hit
 	add_child(mi)
-	food.append({"node": mi})
+	food.append({"node": mi, "age": 0.0})
