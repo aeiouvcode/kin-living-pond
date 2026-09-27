@@ -136,8 +136,8 @@ void fragment() {
 	// meets the floor
 	vec2 fuv = uv + p_to_uv_delta(off);
 	vec2 ct = mix(0.8, 0.5, crisp) / vec2(textureSize(caus_tex, 0));
-	vec3 caus = (texture(caus_tex, fuv + vec2(ct.x, ct.y)).rgb + texture(caus_tex, fuv + vec2(-ct.x, ct.y)).rgb
-		+ texture(caus_tex, fuv + vec2(ct.x, -ct.y)).rgb + texture(caus_tex, fuv - ct).rgb) * 0.5; // 4-tap soften
+	vec3 caus = (texture(caus_tex, fuv + vec2(ct.x, ct.y) * 2.5).rgb + texture(caus_tex, fuv + vec2(-ct.x, ct.y) * 2.5).rgb
+		+ texture(caus_tex, fuv + vec2(ct.x, -ct.y) * 2.5).rgb + texture(caus_tex, fuv - ct * 2.5).rgb) * 0.5; // wider 4-tap soften
 
 	// cheap bloom: a ring of wider taps, only the bright part glows
 	vec3 glow = vec3(0.0);
@@ -145,8 +145,12 @@ void fragment() {
 		float ang = float(k) * 0.785398;
 		glow += texture(caus_tex, fuv + vec2(cos(ang), sin(ang)) * ct * 10.0).rgb;
 	}
-	glow = max(glow / 8.0 * 2.0 - 1.2, vec3(0.0));
+	glow = max(glow / 8.0 * 1.6 - 1.2, vec3(0.0));
 	caus = mix(vec3(1.0), caus, clamp(1.25 - 0.35 * dl, 0.45, 1.0)); // deeper water spreads the net thinner
+	// Broad calm pools interrupt the repeating light net without erasing the pebbles.
+	float net_field = smoothstep(0.29, 0.70, vnz(p * 3.0 + vec2(3.1, 8.7)));
+	caus = mix(vec3(1.0), caus, mix(0.35, 1.0, net_field));
+	glow *= mix(0.35, 1.0, net_field);
 	vec3 cl = max(caus - 1.0, vec3(0.0));
 	vec3 sun = mix(vec3(1.0), vec3(1.0, 0.9, 0.74), warm);
 	caus = mix(caus, vec3(0.55), shade);
