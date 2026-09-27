@@ -3,7 +3,7 @@ extends "res://labs/fish_lab.gd"
 ## water (water_lab), integrated only after both passed their own tests.
 ## The water canvas is drawn as the 3D background (Environment BG_CANVAS), the
 ## fish are real 3D above it, seen from overhead like the RYUKIN reference.
-## Tap: a food pellet lands, rings spread, the nearest fish comes to eat.
+## Tap water to feed; touch a fish for a short, bounded turn and rise.
 
 const FLOOR_DROP = 1.3
 const GAP_SOFT = 1.65 # start easing apart before the wide veil lobes can meet
@@ -34,6 +34,7 @@ func _ready() -> void:
 	settings["qaw"] = 0.0 # QA: pretend viewport size for headless steering runs
 	settings["qah"] = 0.0
 	settings["autotap"] = 0.0 # QA: drop food automatically at t = 2 s
+	settings["autofish"] = 0.0 # QA: touch the ryukin at t = 2 s
 	settings["caus"] = 1.0 # light net on the fish (0 = off)
 	settings["adapt"] = 1.0 # lower the costliest passes if a device cannot hold ~45 fps
 	settings["perf"] = 0.0 # QA: print average process time
@@ -77,7 +78,7 @@ func _ready() -> void:
 		add_child(f)
 		fish.append(f)
 		var p = Vector3(rng2.randf_range(-0.5, 0.5) * half.x + (0.24 if k == "demekin" else 0.0), depth_y, rng2.randf_range(-0.4, 0.4) * half.y + (0.9 if k == "demekin" else -0.9))
-		agents.append({"node": f, "pos": p, "head": rng2.randf_range(0, TAU), "turn": 0.0, "speed": 0.32, "tf": rng2.randf() * 5.0, "target": p, "retarget": 0.0, "rise": 0.0, "kind": k})
+		agents.append({"node": f, "pos": p, "head": rng2.randf_range(0, TAU), "turn": 0.0, "speed": 0.32, "tf": rng2.randf() * 5.0, "target": p, "retarget": 0.0, "rise": 0.0, "touch_t": 0.0, "touch_goal": p, "kind": k})
 	_apply_knobs()
 
 func _frame() -> void:
@@ -118,6 +119,27 @@ func _process(dt: float) -> void:
 	t += dt
 	_adapt(dt)
 	kiss_t -= dt
+	if settings.autofish > 0.0 and t0 < 0.5 and t >= 0.5:
+		# Exercise the same event route a user tap takes, including food fallback.
+		for i in agents.size():
+			var ev = InputEventMouseButton.new()
+			ev.button_index = MOUSE_BUTTON_LEFT
+			ev.pressed = true
+			ev.position = cam.unproject_position(agents[i].pos)
+			_unhandled_input(ev)
+			if food.size() != 0 or agents[i].touch_t <= 0.0:
+				push_error("fish tap became food or missed its fish")
+		var empty = InputEventMouseButton.new()
+		empty.button_index = MOUSE_BUTTON_LEFT
+		empty.pressed = true
+		empty.position = Vector2(-500, -500)
+		_unhandled_input(empty)
+		if food.size() != 1:
+			push_error("off-fish tap did not make food")
+		else:
+			food[0].node.queue_free()
+			food.clear()
+		print("FISH_TOUCH_QA both=2 fish_food=0 off_fish_food=1")
 	if settings.autotap > 0.0 and t0 < 2.0 and t >= 2.0:
 		var vsz = get_viewport().get_visible_rect().size
 		for q in [Vector2(0.62, 0.42), Vector2(0.4, 0.6)]:
@@ -138,8 +160,9 @@ func _process(dt: float) -> void:
 		var a = agents[i]
 		var p: Vector3 = a.pos
 		a.retarget -= dt
+		a.touch_t = maxf(a.touch_t - dt, 0.0)
 		var chasing = false
-		var goal: Vector3 = a.target
+		var goal: Vector3 = a.touch_goal if a.touch_t > 0.0 else a.target
 		var best = 1e9
 		for fd in food:
 			var dd = p.distance_to(fd.node.position)
@@ -152,7 +175,7 @@ func _process(dt: float) -> void:
 				best = dd
 				goal = Vector3(fd.node.position.x, depth_y, fd.node.position.z)
 				chasing = true
-		if not chasing and (a.retarget <= 0.0 or Vector2(p.x - goal.x, p.z - goal.z).length() < 0.5):
+		if not chasing and a.touch_t <= 0.0 and (a.retarget <= 0.0 or Vector2(p.x - goal.x, p.z - goal.z).length() < 0.5):
 			_pick_target(a)
 			goal = a.target
 		var fwd = Vector3(cos(a.head), 0, -sin(a.head))
@@ -193,11 +216,11 @@ func _process(dt: float) -> void:
 		if settings.gapqa > 1.0 and chasing and int(t0) != int(t):
 			print("CH t=%.0f %s p=(%.2f,%.2f) goal=(%.2f,%.2f) best=%.2f yield=%s want=(%.2f,%.2f)" % [t, a.kind, p.x, p.z, goal.x, goal.z, best, yielding, want.x, want.z])
 		var dh = wrapf(desired - a.head, -PI, PI)
-		var max_turn = 1.1 if chasing else 0.6
+		var max_turn = 1.1 if chasing else (0.85 if a.touch_t > 0.0 else 0.6)
 		var turn = clampf(dh * 1.2, -max_turn, max_turn)
 		a.turn = lerpf(a.turn, turn, 1.0 - exp(-dt * 2.0))
 		a.head += a.turn * dt
-		var sp_target = 0.62 if chasing else (0.3 + 0.08 * sin(t * 0.3 + i * 2.0))
+		var sp_target = 0.62 if chasing else (0.42 if a.touch_t > 0.0 else 0.3 + 0.08 * sin(t * 0.3 + i * 2.0))
 		if chasing:
 			# ease in on the pellet so the turn circle never orbits it
 			sp_target *= clampf(best / 1.2, 0.3, 1.0)
@@ -342,11 +365,44 @@ func _ripple(wp: Vector3, amt: float, r: float) -> void:
 	var vsz = get_viewport().get_visible_rect().size
 	water.drop_at(cam.unproject_position(Vector3(wp.x, depth_y, wp.z)) / vsz, amt, r)
 
+# Screen-space body hit only. Veil taps remain water/food; finger-sized cap avoids
+# catching taps intended for the pond. The existing water input makes the ring.
+func _touch_fish(sp: Vector2) -> bool:
+	var vs = get_viewport().get_visible_rect().size
+	var radius = minf(48.0, vs.x * 0.12)
+	var nearest = radius * radius
+	var chosen = -1
+	for i in agents.size():
+		var a = agents[i]
+		if cam.is_position_behind(a.pos):
+			continue
+		var d2 = sp.distance_squared_to(cam.unproject_position(a.pos))
+		if d2 < nearest:
+			nearest = d2
+			chosen = i
+	if chosen < 0:
+		return false
+	var a = agents[chosen]
+	var ahead = Vector3(cos(a.head), 0.0, -sin(a.head))
+	# A small forward arc, biased toward the finger. Do not warp fish or bypass
+	# the existing food priority, soft wall and hard-gap steering.
+	var origin = cam.project_ray_origin(sp)
+	var ray = cam.project_ray_normal(sp)
+	var hit = origin + ray * ((depth_y - origin.y) / ray.y)
+	var delta = Vector3(hit.x - a.pos.x, 0.0, hit.z - a.pos.z)
+	a.touch_goal = a.pos + ahead * 0.65 + delta * 0.35
+	a.touch_t = 1.8
+	a.rise = maxf(a.rise, 0.65)
+	if settings.autofish > 0.0:
+		print("FISH_TOUCH kind=%s food=%d timer=%.1f" % [a.kind, food.size(), a.touch_t])
+	return true
+
 func _unhandled_input(e: InputEvent) -> void:
 	var pressed = (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT) or (e is InputEventScreenTouch and e.pressed)
 	if not pressed:
 		return
-	_spawn_food(e.position)
+	if not _touch_fish(e.position):
+		_spawn_food(e.position)
 
 func _age_food(dt: float) -> void:
 	for fd in food.duplicate():

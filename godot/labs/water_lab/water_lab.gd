@@ -204,24 +204,22 @@ func _build_caustics(vsz: Vector2) -> void:
 	var mesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
 	var sh = load("res://labs/water_lab/caustics.gdshader")
-	var masks = [Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)]
-	for c in 3:
-		var mi = MeshInstance2D.new()
-		mi.mesh = mesh
-		var m = ShaderMaterial.new()
-		m.shader = sh
-		m.set_shader_parameter("height_tex", tex)
-		m.set_shader_parameter("grid", Vector2(W, H))
-		m.set_shader_parameter("mask", masks[c])
-		m.set_shader_parameter("ior_k", 1.0 + (c - 1) * 0.06 * settings.chroma)
-		m.set_shader_parameter("vp_size", Vector2(cs))
-		m.set_shader_parameter("depth", settings.depth)
-		m.set_shader_parameter("wind", settings.wind)
-		m.set_shader_parameter("gain", 0.5)
-		m.set_shader_parameter("focus", 0.92) # lower focus = fewer ray folds (folds alias into sawtooth)
-		mi.material = m
-		caus_vp.add_child(mi)
-		caus_mats.append(m)
+	var mi = MeshInstance2D.new()
+	mi.mesh = mesh
+	var m = ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("height_tex", tex)
+	m.set_shader_parameter("grid", Vector2(W, H))
+	m.set_shader_parameter("mask", Vector3.ONE)
+	m.set_shader_parameter("ior_k", 1.0)
+	m.set_shader_parameter("vp_size", Vector2(cs))
+	m.set_shader_parameter("depth", settings.depth)
+	m.set_shader_parameter("wind", settings.wind)
+	m.set_shader_parameter("gain", 0.5)
+	m.set_shader_parameter("focus", 0.92) # lower focus = fewer ray folds (folds alias into sawtooth)
+	mi.material = m
+	caus_vp.add_child(mi)
+	caus_mats.append(m)
 
 func drop_at(uv: Vector2, amt: float, r: float = 2.6) -> void:
 	_drop(uv, amt, r)
