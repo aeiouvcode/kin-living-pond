@@ -1,0 +1,91 @@
+# KIN integrated 3D fish + water preview. Manual only, scoped to /godot/.
+# Requires the owner's explicit go-live approval; a workflow input alone is not approval.
+name: KIN Godot preview (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type deploy-godot to publish the integrated KIN build to /godot/'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kin-godot-preview
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: 4.5.2-stable
+  GODOT_ZIP_SHA256: 87f6e6be292929e363d15ed9052f277b2ba4e95ed994e1e099048097be2dfd03
+  WEB_TEMPLATE_SHA256: 5f202410b79f15d31bfef4c434ee7b7bcc964b50a587bb1338cb53ad9d94c61b
+
+jobs:
+  build-and-publish:
+    if: ${{ github.event.inputs.confirm == 'deploy-godot' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out Godot source
+        uses: actions/checkout@v4
+        with:
+          ref: godot-prototype
+          path: src
+          persist-credentials: false
+
+      - name: Get pinned Godot and web template
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}"
+          curl -fsSL -o godot.zip "${base}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          echo "${GODOT_ZIP_SHA256}  godot.zip" | sha256sum -c -
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot && chmod +x godot
+          curl -fsSL -o templates.tpz "${base}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q -j templates.tpz templates/web_nothreads_release.zip templates/version.txt -d tpl
+          echo "${WEB_TEMPLATE_SHA256}  tpl/web_nothreads_release.zip" | sha256sum -c -
+          dest="$HOME/.local/share/godot/export_templates/4.5.2.stable"
+          mkdir -p "$dest" && cp tpl/web_nothreads_release.zip tpl/version.txt "$dest/"
+          rm -f templates.tpz
+
+      - name: Build integrated Web Next
+        working-directory: src/godot
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/godot" --headless --import || true
+          GODOT="$GITHUB_WORKSPACE/godot" sh build.sh "Web Next"
+          test -s export_next/index.wasm
+          test -s export_next/index.pck
+          grep -q 'Content-Security-Policy' export_next/index.html
+          grep -q "default-src 'none'" export_next/index.html
+          rm -f export_next/.gdignore export_next/*.import
+
+      - name: Check out Pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+
+      - name: Publish to godot/ only
+        working-directory: site
+        run: |
+          set -euo pipefail
+          rm -rf godot
+          mkdir godot
+          cp -R ../src/godot/export_next/. godot/
+          git add -A godot
+          if git diff --cached --name-only | grep -v '^godot/'; then
+            echo 'Refusing changes outside godot/'; exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo 'godot/ already up to date'; exit 0
+          fi
+          src_sha=$(git -C ../src rev-parse --short HEAD)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "KIN integrated preview: godot-prototype ${src_sha} into /godot/"
+          git push origin HEAD:main
