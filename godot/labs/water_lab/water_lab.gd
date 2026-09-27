@@ -11,7 +11,7 @@ var W = 96
 var H = 208
 const DAMP = 0.985
 
-var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0, "crisp": 1.0, "density": 0.36, "slope": 1.0, "gpu": 1.0}
+var settings = {"floor": "pebble", "depth": 1.0, "chroma": 1.0, "glint": 1.0, "drops": 1.2, "wind": 1.0, "warm": 1.0, "bloom": 1.0, "refl": 1.0, "crisp": 1.0, "density": 0.22, "slope": 1.0, "gpu": 1.0}
 var cur := PackedFloat32Array()
 var prev := PackedFloat32Array()
 var img: Image
@@ -19,6 +19,7 @@ var tex: Texture2D
 var sim_vps = []
 var sim_mats = []
 var sim_i := 0
+const MAX_PENDING_DROPS = 32 # four GPU frames at eight drops/frame; stale touch impulses expire
 var pending = []
 var use_gpu := true
 var proc_us := 0
@@ -144,18 +145,23 @@ func _build_sim() -> void:
 	sim_mats[1].set_shader_parameter("state", sim_vps[0].get_texture())
 	sim_vps[1].render_target_update_mode = SubViewport.UPDATE_ONCE # start from zero
 
+func _take_gpu_drops() -> Array:
+	var batch = pending.slice(0, 8)
+	pending = pending.slice(8)
+	return batch
+
 func _gpu_step() -> void:
 	# write the target that holds the older state, reading the newer one
 	sim_i = 1 - sim_i
 	var m = sim_mats[sim_i]
+	var batch = _take_gpu_drops()
 	var arr = PackedVector4Array()
-	for d in pending.slice(0, 8):
+	for d in batch:
 		arr.append(d)
 	while arr.size() < 8:
 		arr.append(Vector4.ZERO)
 	m.set_shader_parameter("drops", arr)
-	m.set_shader_parameter("n_drops", mini(pending.size(), 8))
-	pending = pending.slice(8)
+	m.set_shader_parameter("n_drops", batch.size())
 	sim_vps[sim_i].render_target_update_mode = SubViewport.UPDATE_ONCE
 	tex = sim_vps[sim_i].get_texture()
 	mat.set_shader_parameter("height_tex", tex)
@@ -221,8 +227,15 @@ func drop_at(uv: Vector2, amt: float, r: float = 2.6) -> void:
 	_drop(uv, amt, r)
 
 func _drop(uv: Vector2, amt: float, r: float = 3.2) -> void:
+	# Drags can leave the viewport while held. Reject off-canvas/nonfinite
+	# impulses rather than spend GPU slots or paint a false edge ripple.
+	# Zero/nonfinite strength or radius also poisons GPU uniforms or the CPU Gaussian.
+	if not uv.is_finite() or uv.x < 0.0 or uv.x > 1.0 or uv.y < 0.0 or uv.y > 1.0 or not is_finite(amt) or amt <= 0.0 or not is_finite(r) or r <= 0.0:
+		return
 	if use_gpu:
 		pending.append(Vector4(uv.x, uv.y, amt, r))
+		if pending.size() > MAX_PENDING_DROPS:
+			pending.pop_front() # keep the newest touch, not a delayed old ripple
 		return
 	var cx = uv.x * W
 	var cy = uv.y * H
